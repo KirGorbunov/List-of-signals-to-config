@@ -51,7 +51,7 @@ def excel_to_json(excel_signals: pd.DataFrame, excel_devices: pd.DataFrame):
                 "holdings": union_addresses
             }
 
-    all_codes = pd.DataFrame(columns=signals_for_excel.1keys())
+    all_codes = pd.DataFrame(columns=signals_for_excel.keys())
     all_codes.to_excel(settings.EXCEL_DATA_FILE_NAME)
 
     config = {
