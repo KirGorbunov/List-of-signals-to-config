@@ -6,8 +6,16 @@ from settings import settings
 
 def get_uniq_addresses(signals: pd.DataFrame) -> dict:
     uniq_signals = signals.drop_duplicates(subset=[settings.SIGNALS_SHEET_ADDRESS_COLUMN_NAME], keep=False)
-    uniq_signals.loc[:, settings.SIGNALS_SHEET_CODE_COLUMN_NAME] = uniq_signals[settings.SIGNALS_SHEET_CODE_COLUMN_NAME] + '_' + uniq_signals[settings.DEVICES_SHEET_GATEWAY_COLUMN_NAME]
-    uniq_address = uniq_signals.set_index(settings.SIGNALS_SHEET_ADDRESS_COLUMN_NAME)[settings.SIGNALS_SHEET_CODE_COLUMN_NAME].to_dict()
+    uniq_signals.loc[:, settings.SIGNALS_SHEET_CODE_COLUMN_NAME] = (
+            uniq_signals[settings.SIGNALS_SHEET_CODE_COLUMN_NAME]
+            + '_'
+            + uniq_signals[settings.DEVICES_SHEET_GATEWAY_COLUMN_NAME]
+    )
+    uniq_address = uniq_signals.set_index(
+        settings.SIGNALS_SHEET_ADDRESS_COLUMN_NAME
+    )[
+        settings.SIGNALS_SHEET_CODE_COLUMN_NAME
+    ].to_dict()
     return uniq_address
 
 
@@ -15,7 +23,9 @@ def get_not_uniq_addresses(signals: pd.DataFrame, gateway: str) -> dict:
     complex_signals = {}
     signals_addr_not_uniq = signals[signals.duplicated(subset=[settings.SIGNALS_SHEET_ADDRESS_COLUMN_NAME], keep=False)]
     for address in signals_addr_not_uniq[settings.SIGNALS_SHEET_ADDRESS_COLUMN_NAME].unique():
-        signals_with_same_address = signals_addr_not_uniq.loc[signals_addr_not_uniq[settings.SIGNALS_SHEET_ADDRESS_COLUMN_NAME] == address]
+        signals_with_same_address = signals_addr_not_uniq.loc[
+            signals_addr_not_uniq[settings.SIGNALS_SHEET_ADDRESS_COLUMN_NAME] == address
+        ]
         if not signals_with_same_address.empty:
             complex_signals[address] = f'{len(signals_with_same_address)}_signals_{gateway}_{address}'
     return complex_signals
