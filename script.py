@@ -12,7 +12,6 @@ logging.basicConfig(
     style="{",
 )
 
-
 def preparing_data(excel_signals: pd.DataFrame, excel_devices: pd.DataFrame) -> pd.DataFrame:
     excel_devices = excel_devices.rename(
         columns={settings.DEVICES_SHEET_DEVICE_COLUMN_NAME: settings.SIGNALS_SHEET_DEVICE_COLUMN_NAME}
@@ -24,6 +23,32 @@ def preparing_data(excel_signals: pd.DataFrame, excel_devices: pd.DataFrame) -> 
     signals = general.loc[general[settings.SIGNALS_SHEET_SIGNAL_TYPE_COLUMN_NAME] == settings.ONLY_SIGNALS_TYPE]
     return signals
 
+def dataframe_to_dicts(signals: pd.DataFrame) -> (dict):
+    uniqe_gateway = signals[settings.DEVICES_SHEET_GATEWAY_COLUMN_NAME].unique()
+    signals_for_excel = {}
+    slaves = {}
+
+    for gateway in uniqe_gateway:
+        device_signals = signals.loc[signals[settings.DEVICES_SHEET_GATEWAY_COLUMN_NAME] == gateway]
+        uniq_addresses = get_uniq_addresses(device_signals)
+        not_uniq_addresses = get_not_uniq_addresses(device_signals, gateway)
+        union_addresses = uniq_addresses | not_uniq_addresses
+        signals_for_excel = get_signals_for_excel(union_addresses, signals_for_excel)
+        slaves = get_slaves(gateway, device_signals, union_addresses, slaves)
+
+    config = {
+        "signals": signals_for_excel,
+        "servers": {
+            "Test": {
+                "host": settings.HOST,
+                "port": settings.PORT,
+                "period": [settings.HOURS, settings.MINUTS, settings.SECONDS],
+                "slaves": slaves
+            }
+        }
+    }
+
+    return signals_for_excel, config
 
 def get_uniq_addresses(signals: pd.DataFrame) -> dict:
     uniq_signals = signals.drop_duplicates(subset=[settings.SIGNALS_SHEET_ADDRESS_COLUMN_NAME], keep=False)
@@ -39,7 +64,6 @@ def get_uniq_addresses(signals: pd.DataFrame) -> dict:
     ].to_dict()
     return uniq_address
 
-
 def get_not_uniq_addresses(signals: pd.DataFrame, gateway: str) -> dict:
     complex_signals = {}
     signals_addr_not_uniq = signals[signals.duplicated(subset=[settings.SIGNALS_SHEET_ADDRESS_COLUMN_NAME], keep=False)]
@@ -50,7 +74,6 @@ def get_not_uniq_addresses(signals: pd.DataFrame, gateway: str) -> dict:
         if not signals_with_same_address.empty:
             complex_signals[address] = f'{len(signals_with_same_address)}_signals_{gateway}_{address}'
     return complex_signals
-
 
 def get_signals_for_excel(union_addresses: dict, signals_for_excel: dict) -> dict:
     for code in union_addresses.values():
@@ -75,49 +98,16 @@ def creating_files(signals_for_excel: dict, config: dict):
     with open(settings.JSON_CONFIG_FILE_NAME, 'w', encoding='utf-8') as json_file:
         json.dump(config, json_file, ensure_ascii=False)
 
-
 def excel_to_json(excel_signals: pd.DataFrame, excel_devices: pd.DataFrame):
-    try:
-        signals = preparing_data(excel_signals, excel_devices)
-        logging.debug('Data prepared')
-    except:
-        logging.exception("Can't prepared data")
+    signals = preparing_data(excel_signals, excel_devices)
+    logging.debug('Data prepared')
 
+    signals_for_excel, config = dataframe_to_dicts(signals)
+    logging.debug('Config have been created successfully')
 
-    try:
-        uniqe_gateway = signals[settings.DEVICES_SHEET_GATEWAY_COLUMN_NAME].unique()
-        signals_for_excel = {}
-        slaves = {}
-
-        for gateway in uniqe_gateway:
-            device_signals = signals.loc[signals[settings.DEVICES_SHEET_GATEWAY_COLUMN_NAME] == gateway]
-            uniq_addresses = get_uniq_addresses(device_signals)
-            not_uniq_addresses = get_not_uniq_addresses(device_signals, gateway)
-            union_addresses = uniq_addresses | not_uniq_addresses
-            signals_for_excel = get_signals_for_excel(union_addresses, signals_for_excel)
-            slaves = get_slaves(gateway, device_signals, union_addresses, slaves)
-
-        config = {
-            "signals": signals_for_excel,
-            "servers": {
-                "Test": {
-                    "host": settings.HOST,
-                    "port": settings.PORT,
-                    "period": [settings.HOURS, settings.MINUTS, settings.SECONDS],
-                    "slaves": slaves
-                }
-            }
-        }
-        logging.debug('Config have been created successfully')
-    except:
-        logging.exception("Oops! Can't creating signals_for_excel and slaves dict")
-
-    try:
-        creating_files(signals_for_excel, config)
-        logging.info(f"Files {settings.EXCEL_DATA_FILE_NAME} and {settings.JSON_CONFIG_FILE_NAME} "
-                     f"have been created successfully")
-    except:
-        logging.exception('Error creating files')
+    creating_files(signals_for_excel, config)
+    logging.info(f"Files {settings.EXCEL_DATA_FILE_NAME} and {settings.JSON_CONFIG_FILE_NAME} "
+                 f"have been created successfully")
 
 
 if __name__ == "__main__":
