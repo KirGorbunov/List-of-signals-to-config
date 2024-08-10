@@ -7,7 +7,7 @@ from settings import settings
 
 
 logging.basicConfig(
-    level='DEBUG',
+    level="DEBUG",
     format="{levelname} - {message}",
     style="{",
 )
@@ -19,7 +19,7 @@ def preparing_data(excel_signals: pd.DataFrame, excel_devices: pd.DataFrame) -> 
     general = pd.merge(excel_signals,
                        excel_devices,
                        on=settings.SIGNALS_SHEET_DEVICE_COLUMN_NAME,
-                       how='left')
+                       how="left")
     signals = general.loc[general[settings.SIGNALS_SHEET_SIGNAL_TYPE_COLUMN_NAME] == settings.ONLY_SIGNALS_TYPE]
     return signals
 
@@ -54,7 +54,7 @@ def get_uniq_addresses(signals: pd.DataFrame) -> dict:
     uniq_signals = signals.drop_duplicates(subset=[settings.SIGNALS_SHEET_ADDRESS_COLUMN_NAME], keep=False)
     uniq_signals.loc[:, settings.SIGNALS_SHEET_CODE_COLUMN_NAME] = (
             uniq_signals[settings.SIGNALS_SHEET_CODE_COLUMN_NAME]
-            + '_'
+            + "_"
             + uniq_signals[settings.DEVICES_SHEET_GATEWAY_COLUMN_NAME]
     )
     uniq_address = uniq_signals.set_index(
@@ -72,7 +72,7 @@ def get_not_uniq_addresses(signals: pd.DataFrame, gateway: str) -> dict:
             signals_addr_not_uniq[settings.SIGNALS_SHEET_ADDRESS_COLUMN_NAME] == address
         ]
         if not signals_with_same_address.empty:
-            complex_signals[address] = f'{len(signals_with_same_address)}_signals_{gateway}_{address}'
+            complex_signals[address] = f"{len(signals_with_same_address)}_signals_{gateway}_{address}"
     return complex_signals
 
 def get_signals_for_excel(union_addresses: dict, signals_for_excel: dict) -> dict:
@@ -95,15 +95,15 @@ def creating_files(signals_for_excel: dict, config: dict):
     all_codes = pd.DataFrame(columns=signals_for_excel.keys())
     all_codes.to_excel(settings.EXCEL_DATA_FILE_NAME)
 
-    with open(settings.JSON_CONFIG_FILE_NAME, 'w', encoding='utf-8') as json_file:
+    with open(settings.JSON_CONFIG_FILE_NAME, "w", encoding="utf-8") as json_file:
         json.dump(config, json_file, ensure_ascii=False)
 
 def excel_to_json(excel_signals: pd.DataFrame, excel_devices: pd.DataFrame):
     signals = preparing_data(excel_signals, excel_devices)
-    logging.debug('Data prepared')
+    logging.debug("Data prepared")
 
     signals_for_excel, config = dataframe_to_dicts(signals)
-    logging.debug('Config have been created successfully')
+    logging.debug("Config have been created successfully")
 
     creating_files(signals_for_excel, config)
     logging.info(f"Files {settings.EXCEL_DATA_FILE_NAME} and {settings.JSON_CONFIG_FILE_NAME} "
@@ -117,13 +117,13 @@ if __name__ == "__main__":
                                            settings.SIGNALS_SHEET_CODE_COLUMN_NAME,
                                            settings.SIGNALS_SHEET_SIGNAL_TYPE_COLUMN_NAME,
                                            settings.SIGNALS_SHEET_ADDRESS_COLUMN_NAME],
-                                  dtype='string')
+                                  dtype="string")
     excel_devices = pd.read_excel(settings.LIST_OF_SIGNALS_FILE_NAME,
                                   settings.DEVICES_SHEET_NAME,
                                   usecols=[settings.DEVICES_SHEET_GATEWAY_COLUMN_NAME,
                                            settings.DEVICES_SHEET_DEVICE_COLUMN_NAME,
                                            settings.DEVICES_SHEET_COMMON_ADDRESS_COLUMN_NAME],
-                                  dtype='string')
+                                  dtype="string")
     logging.info(f"Script starting with sheets signals (len={excel_signals.shape[0]}) "
                  f"and devices (len={excel_devices.shape[0]})")
     excel_to_json(excel_signals, excel_devices)
