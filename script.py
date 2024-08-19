@@ -82,7 +82,7 @@ def get_not_uniq_addresses(signals: pd.DataFrame, gateway: str) -> dict:
     return complex_signals
 
 def get_signals_for_excel(union_addresses: dict, signals_for_excel: dict) -> dict:
-    '''Создание словаря конфигуратора используемого для маппинга с excel-файлом c данными'''
+    '''Создание словаря используемого для маппинга с excel-файлом c данными'''
 
     for code in union_addresses.values():
         signals_for_excel[code] = {
