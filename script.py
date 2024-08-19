@@ -2,7 +2,6 @@ import json
 import pandas as pd
 import logging
 
-
 from settings import settings
 
 
@@ -59,9 +58,7 @@ def get_uniq_addresses(signals: pd.DataFrame) -> dict:
 
     uniq_signals = signals.drop_duplicates(subset=[settings.SIGNALS_SHEET_ADDRESS_COLUMN], keep=False)
     uniq_signals.loc[:, settings.SIGNALS_SHEET_CODE_COLUMN] = (
-            uniq_signals[settings.SIGNALS_SHEET_CODE_COLUMN]
-            + "_"
-            + uniq_signals[settings.DEVICES_SHEET_GATEWAY_COLUMN]
+            uniq_signals[settings.SIGNALS_SHEET_CODE_COLUMN] + "_" + uniq_signals[settings.DEVICES_SHEET_GATEWAY_COLUMN]
     )
     uniq_address = uniq_signals.set_index(
         settings.SIGNALS_SHEET_ADDRESS_COLUMN
