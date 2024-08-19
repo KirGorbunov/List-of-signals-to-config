@@ -7,7 +7,7 @@ from settings import settings
 
 
 logging.basicConfig(
-    level="DEBUG",
+    level=settings.LOGGING_LEVEL,
     format="{levelname} - {message}",
     style="{",
 )
