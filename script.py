@@ -13,6 +13,8 @@ logging.basicConfig(
 )
 
 def preparing_data(excel_signals: pd.DataFrame, excel_devices: pd.DataFrame) -> pd.DataFrame:
+    '''Подготовка и преобразование двух датасетов к одному'''
+
     excel_devices = excel_devices.rename(
         columns={settings.DEVICES_SHEET_DEVICE_COLUMN: settings.SIGNALS_SHEET_DEVICE_COLUMN}
 )
@@ -24,6 +26,8 @@ def preparing_data(excel_signals: pd.DataFrame, excel_devices: pd.DataFrame) -> 
     return signals
 
 def dataframe_to_dicts(signals: pd.DataFrame) -> (dict):
+    '''Создание из датасета словаря необходимой для эмулятора конфигурации'''
+
     uniqe_gateway = signals[settings.DEVICES_SHEET_GATEWAY_COLUMN].unique()
     signals_for_excel = {}
     slaves = {}
@@ -51,6 +55,8 @@ def dataframe_to_dicts(signals: pd.DataFrame) -> (dict):
     return signals_for_excel, config
 
 def get_uniq_addresses(signals: pd.DataFrame) -> dict:
+    '''Создание словаря с уникальными сигналами'''
+
     uniq_signals = signals.drop_duplicates(subset=[settings.SIGNALS_SHEET_ADDRESS_COLUMN], keep=False)
     uniq_signals.loc[:, settings.SIGNALS_SHEET_CODE_COLUMN] = (
             uniq_signals[settings.SIGNALS_SHEET_CODE_COLUMN]
@@ -65,6 +71,9 @@ def get_uniq_addresses(signals: pd.DataFrame) -> dict:
     return uniq_address
 
 def get_not_uniq_addresses(signals: pd.DataFrame, gateway: str) -> dict:
+    '''Создание словаря с неуникальными сигналами,
+     т.е. когда на одном регистре хранится несколько сигналов в разных битах'''
+
     complex_signals = {}
     signals_addr_not_uniq = signals[signals.duplicated(subset=[settings.SIGNALS_SHEET_ADDRESS_COLUMN], keep=False)]
     for address in signals_addr_not_uniq[settings.SIGNALS_SHEET_ADDRESS_COLUMN].unique():
@@ -76,6 +85,8 @@ def get_not_uniq_addresses(signals: pd.DataFrame, gateway: str) -> dict:
     return complex_signals
 
 def get_signals_for_excel(union_addresses: dict, signals_for_excel: dict) -> dict:
+    '''Создание словаря конфигуратора используемого для маппинга с excel-файлом c данными'''
+
     for code in union_addresses.values():
         signals_for_excel[code] = {
             "type": "ushort-float32",
@@ -84,6 +95,8 @@ def get_signals_for_excel(union_addresses: dict, signals_for_excel: dict) -> dic
     return signals_for_excel
 
 def get_slaves(gateway: str, device_signals: dict, union_addresses: dict, slaves: dict) -> dict:
+    '''Создание словаря со всеми сигналами разбитыми по слейвам'''
+
     if union_addresses:
         slaves[gateway] = {
             "slaveID": int(device_signals.iloc[0][settings.DEVICES_SHEET_COMMON_ADDRESS_COLUMN]),
@@ -92,6 +105,8 @@ def get_slaves(gateway: str, device_signals: dict, union_addresses: dict, slaves
     return slaves
 
 def creating_files(signals_for_excel: dict, config: dict):
+    '''Создание файлов'''
+
     all_codes = pd.DataFrame(columns=signals_for_excel.keys())
     all_codes.to_excel(settings.EXCEL_DATA_FILE)
 
