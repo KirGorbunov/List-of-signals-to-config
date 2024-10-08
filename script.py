@@ -21,18 +21,18 @@ def preparing_data(excel_signals: pd.DataFrame, excel_devices: pd.DataFrame) -> 
                        excel_devices,
                        on=settings.SIGNALS_SHEET_DEVICE_COLUMN,
                        how="left")
-    signals = general.loc[general[settings.SIGNALS_SHEET_SIGNAL_TYPE_COLUMN] == settings.ONLY_SIGNALS_TYPE]
+    signals = general.loc[general[settings.SIGNAL_TYPE_COLUMN] == settings.ONLY_SIGNALS_TYPE]
     return signals
 
 def dataframe_to_dicts(signals: pd.DataFrame) -> (dict):
     '''Создание из датасета словаря необходимой для эмулятора конфигурации'''
 
-    uniqe_gateway = signals[settings.DEVICES_SHEET_GATEWAY_COLUMN].unique()
+    uniqe_gateway = signals[settings.GATEWAY_COLUMN].unique()
     signals_for_excel = {}
     slaves = {}
 
     for gateway in uniqe_gateway:
-        device_signals = signals.loc[signals[settings.DEVICES_SHEET_GATEWAY_COLUMN] == gateway]
+        device_signals = signals.loc[signals[settings.GATEWAY_COLUMN] == gateway]
         uniq_addresses = get_uniq_addresses(device_signals)
         not_uniq_addresses = get_not_uniq_addresses(device_signals, gateway)
         union_addresses = uniq_addresses | not_uniq_addresses
@@ -56,14 +56,14 @@ def dataframe_to_dicts(signals: pd.DataFrame) -> (dict):
 def get_uniq_addresses(signals: pd.DataFrame) -> dict:
     '''Создание словаря с уникальными сигналами'''
 
-    uniq_signals = signals.drop_duplicates(subset=[settings.SIGNALS_SHEET_ADDRESS_COLUMN], keep=False)
-    uniq_signals.loc[:, settings.SIGNALS_SHEET_CODE_COLUMN] = (
-            uniq_signals[settings.SIGNALS_SHEET_CODE_COLUMN] + "_" + uniq_signals[settings.DEVICES_SHEET_GATEWAY_COLUMN]
+    uniq_signals = signals.drop_duplicates(subset=[settings.ADDRESS_COLUMN], keep=False)
+    uniq_signals.loc[:, settings.CODE_COLUMN] = (
+            uniq_signals[settings.CODE_COLUMN] + "_" + uniq_signals[settings.GATEWAY_COLUMN]
     )
     uniq_address = uniq_signals.set_index(
-        settings.SIGNALS_SHEET_ADDRESS_COLUMN
+        settings.ADDRESS_COLUMN
     )[
-        settings.SIGNALS_SHEET_CODE_COLUMN
+        settings.CODE_COLUMN
     ].to_dict()
     return uniq_address
 
@@ -72,10 +72,10 @@ def get_not_uniq_addresses(signals: pd.DataFrame, gateway: str) -> dict:
      т.е. когда на одном регистре хранится несколько сигналов в разных битах'''
 
     complex_signals = {}
-    signals_addr_not_uniq = signals[signals.duplicated(subset=[settings.SIGNALS_SHEET_ADDRESS_COLUMN], keep=False)]
-    for address in signals_addr_not_uniq[settings.SIGNALS_SHEET_ADDRESS_COLUMN].unique():
+    signals_addr_not_uniq = signals[signals.duplicated(subset=[settings.ADDRESS_COLUMN], keep=False)]
+    for address in signals_addr_not_uniq[settings.VALUE_TYPE_COLUMN].unique():
         signals_with_same_address = signals_addr_not_uniq.loc[
-            signals_addr_not_uniq[settings.SIGNALS_SHEET_ADDRESS_COLUMN] == address
+            signals_addr_not_uniq[settings.ADDRESS_COLUMN] == address
         ]
         if not signals_with_same_address.empty:
             complex_signals[address] = f"{len(signals_with_same_address)}_signals_{gateway}_{address}"
@@ -83,8 +83,11 @@ def get_not_uniq_addresses(signals: pd.DataFrame, gateway: str) -> dict:
 
 def get_signals_for_excel(union_addresses: dict, signals_for_excel: dict) -> dict:
     '''Создание словаря используемого для маппинга с excel-файлом c данными'''
+    logging.debug(union_addresses)
+
 
     for code in union_addresses.values():
+        logging.debug(code)
         signals_for_excel[code] = {
             "type": "ushort-float32",
             "base": [settings.EXCEL_DATA_FILE, code]
@@ -96,7 +99,7 @@ def get_slaves(gateway: str, device_signals: dict, union_addresses: dict, slaves
 
     if union_addresses:
         slaves[gateway] = {
-            "slaveID": int(device_signals.iloc[0][settings.DEVICES_SHEET_COMMON_ADDRESS_COLUMN]),
+            "slaveID": int(device_signals.iloc[0][settings.COMMON_ADDRESS_COLUMN]),
             "holdings": union_addresses
         }
     return slaves
@@ -126,15 +129,16 @@ if __name__ == "__main__":
     excel_signals = pd.read_excel(settings.LIST_OF_SIGNALS_FILE,
                                   sheet_name=settings.SIGNALS_SHEET,
                                   usecols=[settings.SIGNALS_SHEET_DEVICE_COLUMN,
-                                           settings.SIGNALS_SHEET_CODE_COLUMN,
-                                           settings.SIGNALS_SHEET_SIGNAL_TYPE_COLUMN,
-                                           settings.SIGNALS_SHEET_ADDRESS_COLUMN],
+                                           settings.CODE_COLUMN,
+                                           settings.SIGNAL_TYPE_COLUMN,
+                                           settings.ADDRESS_COLUMN,
+                                           settings.VALUE_TYPE_COLUMN],
                                   dtype="string")
     excel_devices = pd.read_excel(settings.LIST_OF_SIGNALS_FILE,
                                   settings.DEVICES_SHEET,
-                                  usecols=[settings.DEVICES_SHEET_GATEWAY_COLUMN,
+                                  usecols=[settings.GATEWAY_COLUMN,
                                            settings.DEVICES_SHEET_DEVICE_COLUMN,
-                                           settings.DEVICES_SHEET_COMMON_ADDRESS_COLUMN],
+                                           settings.COMMON_ADDRESS_COLUMN],
                                   dtype="string")
     logging.info(f"Script starting with sheets signals (len={excel_signals.shape[0]}) "
                  f"and devices (len={excel_devices.shape[0]})")

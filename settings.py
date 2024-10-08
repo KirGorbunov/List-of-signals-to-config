@@ -13,13 +13,14 @@ class Settings(BaseSettings):
 
     # Названия столбцов:
     SIGNALS_SHEET_DEVICE_COLUMN: str = "device"
-    SIGNALS_SHEET_CODE_COLUMN: str = "code"
-    SIGNALS_SHEET_SIGNAL_TYPE_COLUMN: str = "signal_type"
-    SIGNALS_SHEET_ADDRESS_COLUMN: str = "address"
+    CODE_COLUMN: str = "code"
+    SIGNAL_TYPE_COLUMN: str = "signal_type"
+    ADDRESS_COLUMN: str = "address"
+    VALUE_TYPE_COLUMN: str = "value_type"
 
-    DEVICES_SHEET_GATEWAY_COLUMN: str = "gateway"
+    GATEWAY_COLUMN: str = "gateway"
     DEVICES_SHEET_DEVICE_COLUMN: str = "code"
-    DEVICES_SHEET_COMMON_ADDRESS_COLUMN: str = "common_address"
+    COMMON_ADDRESS_COLUMN: str = "common_address"
 
     # Необходимый тип сигнала:
     ONLY_SIGNALS_TYPE: str = "Сигнал"
