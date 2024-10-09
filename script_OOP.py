@@ -40,10 +40,10 @@ class DatasetConstractor:
 
 
 class Configurator:
-    def delete_unnessary_rows(general):
-        signals = general.loc[general[settings.SIGNAL_TYPE_COLUMN] == settings.ONLY_SIGNALS_TYPE]
-        signals_with_address = signals[signals['address'].notna()]
-        return signals_with_address
+    def get_measured_rows(df):
+        measured_signals = df.loc[df[settings.SIGNAL_TYPE_COLUMN] == settings.ONLY_SIGNALS_TYPE]
+        measured_signals_with_address = measured_signals[measured_signals[settings.ADDRESS_COLUMN].notna()]
+        return measured_signals_with_address
 
     def change_code_name(signals):
         signals['count'] = signals.groupby(['address', 'common_address'])['address'].transform('count')
@@ -126,7 +126,7 @@ def excel_to_json(excel_signals: pd.DataFrame, excel_devices: pd.DataFrame):
     logging.debug("Dataframe created")
 
     # Dataframe prepare:
-    signals = Configurator.delete_unnessary_rows(general)
+    signals = Configurator.get_measured_rows(general)
     signals = Configurator.change_code_name(signals)
     unique_signals = Configurator.get_measured_signals(signals)
     logging.debug("Dataframe prepared")
