@@ -80,7 +80,7 @@ class EmulatorConfigurator(Configurator):
         for gateway in uniqe_gateway:
             device_signals = signals.loc[signals[settings.GATEWAY_COLUMN] == gateway]
             mapping[gateway] = {
-                "slaveID": device_signals[settings.COMMON_ADDRESS_COLUMN].iloc[0],
+                "slaveID": int(device_signals[settings.COMMON_ADDRESS_COLUMN].iloc[0]),
                 "holdings": device_signals.set_index(settings.ADDRESS_COLUMN)[settings.CODE_COLUMN].to_dict()
             }
         return mapping
