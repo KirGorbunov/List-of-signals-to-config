@@ -60,6 +60,13 @@ class Configurator:
         uniq_signals = signals.drop_duplicates(subset=[settings.CODE_COLUMN], keep='last')
         return uniq_signals
 
+    def normalize_data_type(signals):
+        missing_count = signals[settings.VALUE_TYPE_COLUMN].isnull().sum()
+        if missing_count > 0:
+            logging.warning(f"Количество отсутствующих значений в столбце: {missing_count}")
+            signals.loc[:, settings.VALUE_TYPE_COLUMN] = signals[settings.VALUE_TYPE_COLUMN].fillna('hfloat')
+            logging.warning(f"{missing_count} сигналам установлен тип hfloat")
+        return signals
 
 class DataMappingConfigurator(Configurator):
     def get_data_mapping(signals):
@@ -129,12 +136,13 @@ def excel_to_json(excel_signals: pd.DataFrame, excel_devices: pd.DataFrame):
     signals = Configurator.get_measured_rows(general)
     signals = Configurator.change_code_name(signals)
     unique_signals = Configurator.get_measured_signals(signals)
+    normalize_signals = Configurator.normalize_data_type(unique_signals)
     logging.debug("Dataframe prepared")
 
     # Creating mappings:
-    signals_for_mapping = DataMappingConfigurator.get_data_mapping(unique_signals)
-    emulator_mapping = EmulatorConfigurator.get_slaves_mapping(unique_signals)
-    data_mapping = DataConfigurator.get_data_mapping(unique_signals)
+    signals_for_mapping = DataMappingConfigurator.get_data_mapping(normalize_signals)
+    emulator_mapping = EmulatorConfigurator.get_slaves_mapping(normalize_signals)
+    data_mapping = DataConfigurator.get_data_mapping(normalize_signals)
 
     config = EmulatorConfigurator.get_config(signals_for_mapping, emulator_mapping)
     logging.debug("Mapping prepared")
