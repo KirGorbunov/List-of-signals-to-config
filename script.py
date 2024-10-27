@@ -33,9 +33,9 @@ class DatasetConstractor:
 
         # Объединение датасетов по общему столбцу device
         merged_data = pd.merge(signal_data,
-                           renamed_device_data,
-                           on=settings.SIGNALS_SHEET_DEVICE_COLUMN,
-                           how="left")
+                               renamed_device_data,
+                               on=settings.SIGNALS_SHEET_DEVICE_COLUMN,
+                               how="left")
         return merged_data
 
 
@@ -68,6 +68,7 @@ class Configurator:
             logging.warning(f"{missing_count} сигналам установлен тип hfloat")
         return signals
 
+
 class DataMappingConfigurator(Configurator):
     def get_data_mapping(signals):
         mapping = {}
@@ -83,10 +84,10 @@ class DataMappingConfigurator(Configurator):
 class EmulatorConfigurator(Configurator):
     def get_slaves_mapping(signals):
         mapping = {}
-        uniqe_gateway = signals[settings.GATEWAY_COLUMN].unique()
-        for gateway in uniqe_gateway:
-            device_signals = signals.loc[signals[settings.GATEWAY_COLUMN] == gateway]
-            mapping[gateway] = {
+        uniqe_device = signals[settings.SIGNALS_SHEET_DEVICE_COLUMN].unique()
+        for device in uniqe_device:
+            device_signals = signals.loc[signals[settings.SIGNALS_SHEET_DEVICE_COLUMN] == device]
+            mapping[device] = {
                 "slaveID": int(device_signals[settings.COMMON_ADDRESS_COLUMN].iloc[0]),
                 "holdings": device_signals.set_index(settings.ADDRESS_COLUMN)[settings.CODE_COLUMN].to_dict()
             }
