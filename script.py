@@ -40,10 +40,22 @@ class DatasetConstractor:
 
 
 class Configurator:
-    def get_measured_rows(df):
-        measured_signals = df.loc[df[settings.SIGNAL_TYPE_COLUMN] == settings.ONLY_SIGNALS_TYPE]
-        measured_signals_with_address = measured_signals[measured_signals[settings.ADDRESS_COLUMN].notna()]
-        return measured_signals_with_address
+    def get_measured_rows(df: pd.DataFrame) -> pd.DataFrame:
+        """
+            Фильтрует DataFrame, оставляя только сигналы, которые необходимо эмулировать (проверка на тип сигнала)
+            и для которых задан modbus-адрес (проверка на наличие адреса).
+
+            Параметры:
+            - df: общий DataFrame со всеми сигналами
+
+            Возвращает:
+            - DataFrame с отфильтрованными строками, содержащими только измереяемые сигналы с modbus-адресами.
+            """
+
+        return df[
+            (df[settings.SIGNAL_TYPE_COLUMN] == settings.ONLY_SIGNALS_TYPE) &
+            (df[settings.ADDRESS_COLUMN].notna())
+            ]
 
     def change_code_name(signals):
         signals['count'] = signals.groupby(['address', 'common_address'])['address'].transform('count')
