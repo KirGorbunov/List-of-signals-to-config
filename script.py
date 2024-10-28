@@ -58,14 +58,21 @@ class Configurator:
             ]
 
     def change_code_name(signals):
-        signals['count'] = signals.groupby(['address', 'common_address'])['address'].transform('count')
-        signals['count'] = signals['count'].fillna(0)
-        signals['count'] = signals['count'].astype(int)
-        signals['code'] = np.where(signals['count'] > 1,
-                                   signals['count'].astype(str) + '_signals_' + signals['gateway'] + '_' + signals[
-                                       'address'],
-                                   signals['code'] + '_' + signals['gateway'])
-        signals = signals.drop('count', axis=1)
+        """
+        Меняет столбец 'code', если количество записей для каждой комбинации
+        'address' и 'common_address' > 1, т.е. когда на одном регистре содержиться несколько сигналов.
+        """
+
+        # Вычисление количества записей для каждой комбинации 'address' и 'common_address':
+        signal_counts = signals.groupby(['address', 'common_address']).transform('size')
+
+        # Изменение столбца code:
+        signals['code'] = np.where(
+            signal_counts > 1,
+            signal_counts.astype(str) + '_signals_' + signals['gateway'] + '_' + signals['address'],
+            signals['code'] + '_' + signals['gateway']
+        )
+
         return signals
 
     def get_measured_signals(signals):
