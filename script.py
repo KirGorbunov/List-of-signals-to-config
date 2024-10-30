@@ -57,10 +57,19 @@ class Configurator:
             (df[settings.ADDRESS_COLUMN].notna())
             ]
 
-    def change_code_name(signals):
+    def change_code_name(signals: pd.DataFrame) -> pd.DataFrame:
         """
         Меняет столбец 'code', если количество записей для каждой комбинации
         'address' и 'common_address' > 1, т.е. когда на одном регистре содержиться несколько сигналов.
+
+        Параметры:
+        - signals: общий DataFrame cо всеми измеряемыми сигналами
+
+        Возвращает:
+        - исходный DataFrame с измененным столбцом 'code'.
+        Если для комбинации ('address', 'common_address') существует несколько сигналов, к 'code' добавляется
+        количество сигналов, название гейтвея и modbus-адрес. В противном случае к 'code' добавляется только
+        название гейтвея.
         """
 
         # Вычисление количества записей для каждой комбинации 'address' и 'common_address':
@@ -72,17 +81,25 @@ class Configurator:
             signal_counts.astype(str) + '_signals_' + signals['gateway'] + '_' + signals['address'],
             signals['code'] + '_' + signals['gateway']
         )
-
         return signals
 
-    def get_measured_signals(signals):
-        uniq_signals = signals.drop_duplicates(subset=[settings.CODE_COLUMN], keep='last')
-        return uniq_signals
+    def get_unique_signals(signals: pd.DataFrame) -> pd.DataFrame:
+        """
+        Удаляет из DataFrame повторные составные сигналы, оставляя по только один экзепляр.
+
+        Параметры:
+        - signals: DataFrame c дублированием кодов состовных сигналов
+
+        Возвращает:
+        - DataFrame с уникальными сигналами, где для каждого кода сохранена одна запись.
+        """
+
+        return signals.drop_duplicates(subset=[settings.CODE_COLUMN]).copy()
 
     def normalize_data_type(signals):
         missing_count = signals[settings.VALUE_TYPE_COLUMN].isnull().sum()
         if missing_count > 0:
-            logging.warning(f"Количество отсутствующих значений в столбце: {missing_count}")
+            logging.warning(f"Количество отсутствующих значений в столбце типа данных: {missing_count}")
             signals.loc[:, settings.VALUE_TYPE_COLUMN] = signals[settings.VALUE_TYPE_COLUMN].fillna('hfloat')
             logging.warning(f"{missing_count} сигналам установлен тип hfloat")
         return signals
@@ -155,7 +172,7 @@ def excel_to_json(excel_signals: pd.DataFrame, excel_devices: pd.DataFrame):
     # Dataframe prepare:
     signals = Configurator.get_measured_rows(general)
     signals = Configurator.change_code_name(signals)
-    unique_signals = Configurator.get_measured_signals(signals)
+    unique_signals = Configurator.get_unique_signals(signals)
     normalize_signals = Configurator.normalize_data_type(unique_signals)
     logging.debug("Dataframe prepared")
 
