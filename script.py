@@ -112,7 +112,11 @@ class Configurator:
         signals = signals.copy()
 
         # Конкатенация названий устройств
-        signals['device'] = signals.groupby('common_address')['device'].transform(lambda x: ', '.join(x.unique()))
+        signals[settings.SIGNALS_SHEET_DEVICE_COLUMN] = signals.groupby(
+            settings.COMMON_ADDRESS_COLUMN
+        )[settings.SIGNALS_SHEET_DEVICE_COLUMN].transform(
+            lambda x: ', '.join(x.unique())
+        )
         return signals
 
     def add_data_type(signals):
