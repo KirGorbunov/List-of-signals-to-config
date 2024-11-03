@@ -85,7 +85,7 @@ class Configurator:
 
     def get_unique_signals(signals: pd.DataFrame) -> pd.DataFrame:
         """
-        Удаляет из DataFrame повторные составные сигналы, оставляя по только один экзепляр.
+        Удаляет из DataFrame повторные составные сигналы, оставляя только один экзепляр.
 
         Параметры:
         - signals: DataFrame c дублированием кодов состовных сигналов
@@ -96,7 +96,26 @@ class Configurator:
 
         return signals.drop_duplicates(subset=[settings.CODE_COLUMN]).copy()
 
-    def normalize_data_type(signals):
+    def concatenate_devices(signals: pd.DataFrame) -> pd.DataFrame:
+        """
+        Объединяет (конкатенирует) название датчиков, если они имеют slave_id (common address)
+
+        Параметры:
+        - signals: DataFrame, в котором каждый датчик представлен в единственном экзепляре
+
+        Возвращает:
+        - DataFrame с обновленным столбцом 'device', содержащим названия устройств,
+        перечисленные через запятую, если они имеют одинаковый slave_id.
+        """
+
+        # Создание копии DataFrame для избежания предупреждений о присвоении
+        signals = signals.copy()
+
+        # Конкатенация названий устройств
+        signals['device'] = signals.groupby('common_address')['device'].transform(lambda x: ', '.join(x.unique()))
+        return signals
+
+    def add_data_type(signals):
         missing_count = signals[settings.VALUE_TYPE_COLUMN].isnull().sum()
         if missing_count > 0:
             logging.warning(f"Количество отсутствующих значений в столбце типа данных: {missing_count}")
@@ -172,8 +191,9 @@ def excel_to_json(excel_signals: pd.DataFrame, excel_devices: pd.DataFrame):
     # Dataframe prepare:
     signals = Configurator.get_measured_rows(general)
     signals = Configurator.change_code_name(signals)
+    signals = Configurator.concatenate_devices(signals)
     unique_signals = Configurator.get_unique_signals(signals)
-    normalize_signals = Configurator.normalize_data_type(unique_signals)
+    normalize_signals = Configurator.add_data_type(unique_signals)
     logging.debug("Dataframe prepared")
 
     # Creating mappings:
