@@ -282,7 +282,16 @@ class ConfigCreator(FileCreator):
 
 
 class DataTemplateCreator(FileCreator):
-    def data_excel_template_creator(data_mapping):
+    def data_excel_template_creator(data_mapping: pd.DataFrame) -> NoReturn:
+        """
+        Сохраняет коды сигналов из DataFrame в Excel-файл.
+
+        Параметры:
+        - data_mapping: DataFrame, содержащий данные для сохранения в Excel.
+
+        Возвращает:
+        - None
+        """
         data_mapping.to_excel(settings.EXCEL_DATA_FILE)
 
 
