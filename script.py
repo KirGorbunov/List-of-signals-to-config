@@ -14,6 +14,44 @@ logging.basicConfig(
 )
 
 
+class SignalDataLoader:
+    """Класс для загрузки данных сигналов и устройств из Excel-файлов."""
+
+    def __init__(self, signals_file: str):
+        self.signals_file = signals_file
+
+    def load_signals(self) -> pd.DataFrame:
+        """Загружает данные сигналов из Excel-файла."""
+
+        signals = pd.read_excel(
+            self.signals_file,
+            sheet_name=settings.SIGNALS_SHEET,
+            usecols=[
+                settings.SIGNALS_SHEET_DEVICE_COLUMN,
+                settings.CODE_COLUMN,
+                settings.SIGNAL_TYPE_COLUMN,
+                settings.ADDRESS_COLUMN,
+                settings.VALUE_TYPE_COLUMN
+            ],
+            dtype=str
+        )
+        return signals
+
+    def load_devices(self) -> pd.DataFrame:
+        """Загружает данные устройств из Excel-файла."""
+        devices = pd.read_excel(
+            self.signals_file,
+            sheet_name=settings.DEVICES_SHEET,
+            usecols=[
+                settings.GATEWAY_COLUMN,
+                settings.DEVICES_SHEET_DEVICE_COLUMN,
+                settings.COMMON_ADDRESS_COLUMN
+            ],
+            dtype=str
+        )
+        return devices
+
+
 class DatasetConstructor:
     def merge_signals_and_devices(signal_data: pd.DataFrame, device_data: pd.DataFrame) -> pd.DataFrame:
         """
@@ -323,21 +361,40 @@ def excel_to_json(excel_signals: pd.DataFrame, excel_devices: pd.DataFrame):
                  f"have been created successfully")
 
 
+def main():
+    # Загрузка данных
+    data_loader = SignalDataLoader(settings.LIST_OF_SIGNALS_FILE)
+    signals_data = data_loader.load_signals()
+    devices_data = data_loader.load_devices()
+    logging.info(
+        f"Данные загружены: signals ({signals_data.shape[0]} строк), devices ({devices_data.shape[0]} строк)."
+    )
+
+    general = DatasetConstructor.merge_signals_and_devices(signals_data, devices_data)
+    logging.debug("Dataframe created")
+
+    # Dataframe prepare:
+    signals = Configurator.get_measured_rows(general)
+    signals = Configurator.change_code_name(signals)
+    signals = Configurator.concatenate_devices(signals)
+    unique_signals = Configurator.get_unique_signals(signals)
+    normalize_signals = Configurator.add_data_type(unique_signals)
+    logging.debug("Dataframe prepared")
+
+    # Creating mappings:
+    signals_for_mapping = DataMappingConfigurator.get_data_mapping(normalize_signals)
+    emulator_mapping = EmulatorConfigurator.get_slaves_mapping(normalize_signals)
+    data_mapping = DataConfigurator.get_signals_code(normalize_signals)
+
+    config = EmulatorConfigurator.get_config(signals_for_mapping, emulator_mapping)
+    logging.debug("Mapping prepared")
+
+    # Creating files:
+    ConfigCreator.save_config_to_json(config)
+    DataTemplateCreator.data_excel_template_creator(data_mapping)
+    logging.info(f"Files {settings.EXCEL_DATA_FILE} and {settings.JSON_CONFIG_FILE} "
+                 f"have been created successfully")
+
+
 if __name__ == "__main__":
-    excel_signals = pd.read_excel(settings.LIST_OF_SIGNALS_FILE,
-                                  sheet_name=settings.SIGNALS_SHEET,
-                                  usecols=[settings.SIGNALS_SHEET_DEVICE_COLUMN,
-                                           settings.CODE_COLUMN,
-                                           settings.SIGNAL_TYPE_COLUMN,
-                                           settings.ADDRESS_COLUMN,
-                                           settings.VALUE_TYPE_COLUMN],
-                                  dtype="string")
-    excel_devices = pd.read_excel(settings.LIST_OF_SIGNALS_FILE,
-                                  settings.DEVICES_SHEET,
-                                  usecols=[settings.GATEWAY_COLUMN,
-                                           settings.DEVICES_SHEET_DEVICE_COLUMN,
-                                           settings.COMMON_ADDRESS_COLUMN],
-                                  dtype="string")
-    logging.info(f"Script starting with sheets signals (len={excel_signals.shape[0]}) "
-                 f"and devices (len={excel_devices.shape[0]})")
-    excel_to_json(excel_signals, excel_devices)
+    main()
