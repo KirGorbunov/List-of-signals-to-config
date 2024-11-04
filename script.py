@@ -180,7 +180,33 @@ class DataMappingConfigurator(Configurator):
 
 
 class EmulatorConfigurator(Configurator):
-    def get_slaves_mapping(signals):
+    def get_slaves_mapping(signals: pd.DataFrame) -> dict:
+        """
+            Создает словарь для маппинга в конфиге devices(датчиков) на их slave_id и содержащиеся в них регистры.
+
+            Параметры:
+            - signals (pd.DataFrame): DataFrame, содержащий информацию о сигналах, включая столбцы устройств,
+              общих адресов, адресов и кодов сигналов.
+
+            Возвращает:
+            - dict: Словарь, где ключами являются названия устройств, а значениями — словари с ключами:
+                - "slaveID": целое число, общее для устройства.
+                - "holdings": словарь, маппящий адреса раегистров на коды сигналов.
+
+            Пример возвращаемого значения:
+            {
+                'device1': {
+                    'slaveID': 1,
+                    'holdings': {100: 'code1', 101: 'code2'}
+                },
+                'device2': {
+                    'slaveID': 2,
+                    'holdings': {200: 'code3', 201: 'code4'}
+                },
+                ...
+            }
+            """
+
         mapping = {}
         uniqe_device = signals[settings.SIGNALS_SHEET_DEVICE_COLUMN].unique()
         for device in uniqe_device:
@@ -191,9 +217,20 @@ class EmulatorConfigurator(Configurator):
             }
         return mapping
 
-    def get_config(signals_for_mapping, emulator_mapping):
+    def get_config(data_mapping: dict, emulator_mapping: dict)  -> dict:
+        """
+            Генерирует итоговый конфигурационный словарь для эмулятора.
+
+            Параметры:
+            data_mapping: dict, словарь с маппингом между кодами в excel файле и эмуляторе.
+            emulator_mapping: dict, словарь с маппингом devices(датчиков) на их slave_id и регистры.
+
+            Возвращает:
+            - dict: Конфигурационный словарь, готовый для использования эмулятором.
+            """
+
         config = {
-            "signals": signals_for_mapping,
+            "signals": data_mapping,
             "servers": {
                 "Test": {
                     "host": settings.HOST,
@@ -240,11 +277,10 @@ def excel_to_json(excel_signals: pd.DataFrame, excel_devices: pd.DataFrame):
     logging.debug("Dataframe prepared")
 
     # Creating mappings:
-    signals_for_mapping = DataMappingConfigurator.get_data_mapping(normalize_signals)
     emulator_mapping = EmulatorConfigurator.get_slaves_mapping(normalize_signals)
     data_mapping = DataConfigurator.get_data_mapping(normalize_signals)
 
-    config = EmulatorConfigurator.get_config(signals_for_mapping, emulator_mapping)
+    config = EmulatorConfigurator.get_config(data_mapping, emulator_mapping)
     logging.debug("Mapping prepared")
 
     # Creating files:
