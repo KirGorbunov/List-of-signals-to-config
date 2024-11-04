@@ -14,7 +14,7 @@ logging.basicConfig(
 )
 
 
-class DatasetConstractor:
+class DatasetConstructor:
     def merge_signals_and_devices(signal_data: pd.DataFrame, device_data: pd.DataFrame) -> pd.DataFrame:
         """
         Объединяет два датасета signals и devices по общему столбцу device.
@@ -235,7 +235,7 @@ class EmulatorConfigurator(Configurator):
                 "Test": {
                     "host": settings.HOST,
                     "port": settings.PORT,
-                    "period": [settings.HOURS, settings.MINUTS, settings.SECONDS],
+                    "period": [settings.HOURS, settings.MINUTES, settings.SECONDS],
                     "slaves": emulator_mapping
                 }
             }
@@ -297,7 +297,7 @@ class DataTemplateCreator(FileCreator):
 
 def excel_to_json(excel_signals: pd.DataFrame, excel_devices: pd.DataFrame):
     # Creating dataframe:
-    general = DatasetConstractor.merge_signals_and_devices(excel_signals, excel_devices)
+    general = DatasetConstructor.merge_signals_and_devices(excel_signals, excel_devices)
     logging.debug("Dataframe created")
 
     # Dataframe prepare:

@@ -31,7 +31,7 @@ class Settings(BaseSettings):
 
     # Конфигурирование таймера эмулятора:
     HOURS: int = 0
-    MINUTS: int = 10
+    MINUTES: int = 10
     SECONDS: int = 0
 
     # Уровень логгирования:
