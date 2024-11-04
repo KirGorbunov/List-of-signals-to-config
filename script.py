@@ -14,7 +14,7 @@ logging.basicConfig(
 )
 
 
-class SignalDataLoader:
+class DataLoader:
     """Класс для загрузки данных сигналов и устройств из Excel-файлов."""
 
     def __init__(self, signals_file: str):
@@ -340,7 +340,7 @@ class DataTemplateCreator(FileCreator):
 
 def main():
     # Загрузка данных
-    data_loader = SignalDataLoader(settings.LIST_OF_SIGNALS_FILE)
+    data_loader = DataLoader(settings.LIST_OF_SIGNALS_FILE)
     signals_data = data_loader.load_signals()
     devices_data = data_loader.load_devices()
     logging.info(
