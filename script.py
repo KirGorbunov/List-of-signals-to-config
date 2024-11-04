@@ -52,29 +52,34 @@ class SignalDataLoader:
         return devices
 
 
-class DatasetConstructor:
-    def merge_signals_and_devices(signal_data: pd.DataFrame, device_data: pd.DataFrame) -> pd.DataFrame:
+class DataConstructor:
+    """Класс для создания общего датасета данных сигналов и устройств."""
+
+    @staticmethod
+    def merge(signals: pd.DataFrame, devices: pd.DataFrame) -> pd.DataFrame:
         """
         Объединяет два датасета signals и devices по общему столбцу device.
 
         Параметры:
-        - signal_data: DataFrame с данными сигналов.
-        - device_data: DataFrame с данными устройств.
+        - signals: DataFrame с данными сигналов.
+        - devices: DataFrame с данными устройств.
 
         Возвращает:
         - DataFrame, содержащий объединенные данные сигналов и устройств.
         """
 
         # Переименование столбца в датасете devices для соответствия имени столбца в датасете signals
-        renamed_device_data = device_data.rename(
+        devices_renamed = devices.rename(
             columns={settings.DEVICES_SHEET_DEVICE_COLUMN: settings.SIGNALS_SHEET_DEVICE_COLUMN}
         )
 
         # Объединение датасетов по общему столбцу device
-        merged_data = pd.merge(signal_data,
-                               renamed_device_data,
-                               on=settings.SIGNALS_SHEET_DEVICE_COLUMN,
-                               how="left")
+        merged_data = pd.merge(
+            signals,
+            devices_renamed,
+            on=settings.SIGNALS_SHEET_DEVICE_COLUMN,
+            how="left"
+        )
         return merged_data
 
 
@@ -333,34 +338,6 @@ class DataTemplateCreator(FileCreator):
         data_mapping.to_excel(settings.EXCEL_DATA_FILE)
 
 
-def excel_to_json(excel_signals: pd.DataFrame, excel_devices: pd.DataFrame):
-    # Creating dataframe:
-    general = DatasetConstructor.merge_signals_and_devices(excel_signals, excel_devices)
-    logging.debug("Dataframe created")
-
-    # Dataframe prepare:
-    signals = Configurator.get_measured_rows(general)
-    signals = Configurator.change_code_name(signals)
-    signals = Configurator.concatenate_devices(signals)
-    unique_signals = Configurator.get_unique_signals(signals)
-    normalize_signals = Configurator.add_data_type(unique_signals)
-    logging.debug("Dataframe prepared")
-
-    # Creating mappings:
-    signals_for_mapping = DataMappingConfigurator.get_data_mapping(normalize_signals)
-    emulator_mapping = EmulatorConfigurator.get_slaves_mapping(normalize_signals)
-    data_mapping = DataConfigurator.get_signals_code(normalize_signals)
-
-    config = EmulatorConfigurator.get_config(signals_for_mapping, emulator_mapping)
-    logging.debug("Mapping prepared")
-
-    # Creating files:
-    ConfigCreator.save_config_to_json(config)
-    DataTemplateCreator.data_excel_template_creator(data_mapping)
-    logging.info(f"Files {settings.EXCEL_DATA_FILE} and {settings.JSON_CONFIG_FILE} "
-                 f"have been created successfully")
-
-
 def main():
     # Загрузка данных
     data_loader = SignalDataLoader(settings.LIST_OF_SIGNALS_FILE)
@@ -370,11 +347,12 @@ def main():
         f"Данные загружены: signals ({signals_data.shape[0]} строк), devices ({devices_data.shape[0]} строк)."
     )
 
-    general = DatasetConstructor.merge_signals_and_devices(signals_data, devices_data)
-    logging.debug("Dataframe created")
+    # Объединение данных
+    merged_data = DataConstructor.merge(signals_data, devices_data)
+    logging.debug("Данные сигналов и устройств объединены.")
 
     # Dataframe prepare:
-    signals = Configurator.get_measured_rows(general)
+    signals = Configurator.get_measured_rows(merged_data)
     signals = Configurator.change_code_name(signals)
     signals = Configurator.concatenate_devices(signals)
     unique_signals = Configurator.get_unique_signals(signals)
