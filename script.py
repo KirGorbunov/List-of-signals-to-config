@@ -217,7 +217,7 @@ class EmulatorConfigurator(Configurator):
             }
         return mapping
 
-    def get_config(data_mapping: dict, emulator_mapping: dict)  -> dict:
+    def get_config(data_mapping: dict, emulator_mapping: dict) -> dict:
         """
             Генерирует итоговый конфигурационный словарь для эмулятора.
 
@@ -244,7 +244,20 @@ class EmulatorConfigurator(Configurator):
 
 
 class DataConfigurator(Configurator):
-    def get_data_mapping(signals):
+    def get_signals_code(signals: pd.DataFrame) -> pd.DataFrame:
+        """
+        Создает пустой DataFrame с колонками, соответствующими кодам сигналов из входного DataFrame.
+
+        Параметры:
+        - signals: DataFrame, содержащий столбец с кодами сигналов (settings.CODE_COLUMN).
+
+        Возвращает:
+        - pd.DataFrame: Пустой DataFrame, колонки которого — уникальные коды сигналов из столбца settings.CODE_COLUMN.
+        """
+        # Проверяем, содержит ли DataFrame необходимый столбец
+        if settings.CODE_COLUMN not in signals.columns:
+            raise ValueError(f"Входной DataFrame не содержит столбца '{settings.CODE_COLUMN}'.")
+
         return pd.DataFrame(columns=signals[settings.CODE_COLUMN])
 
 
@@ -278,7 +291,7 @@ def excel_to_json(excel_signals: pd.DataFrame, excel_devices: pd.DataFrame):
 
     # Creating mappings:
     emulator_mapping = EmulatorConfigurator.get_slaves_mapping(normalize_signals)
-    data_mapping = DataConfigurator.get_data_mapping(normalize_signals)
+    data_mapping = DataConfigurator.get_signals_code(normalize_signals)
 
     config = EmulatorConfigurator.get_config(data_mapping, emulator_mapping)
     logging.debug("Mapping prepared")

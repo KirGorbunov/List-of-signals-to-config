@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     ONLY_SIGNALS_TYPE: str = "Сигнал"
 
     # IP-адрес и порт:
-    HOST: str = "127.0.0.1"
+    HOST: str = "0.0.0.0"
     PORT: int = 502
 
     # Конфигурирование таймера эмулятора:
