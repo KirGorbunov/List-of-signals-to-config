@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import NoReturn
 
 import numpy as np
 import pandas as pd
@@ -228,7 +229,6 @@ class EmulatorConfigurator(Configurator):
             Возвращает:
             - dict: Конфигурационный словарь, готовый для использования эмулятором.
             """
-
         config = {
             "signals": data_mapping,
             "servers": {
@@ -249,11 +249,12 @@ class DataConfigurator(Configurator):
         Создает пустой DataFrame с колонками, соответствующими кодам сигналов из входного DataFrame.
 
         Параметры:
-        - signals: DataFrame, содержащий столбец с кодами сигналов (settings.CODE_COLUMN).
+        - signals: DataFrame, содержащий столбец с кодами сигналов.
 
         Возвращает:
-        - pd.DataFrame: Пустой DataFrame, колонки которого — уникальные коды сигналов из столбца settings.CODE_COLUMN.
+        - pd.DataFrame: Пустой DataFrame, колонки которого — коды сигналов.
         """
+
         # Проверяем, содержит ли DataFrame необходимый столбец
         if settings.CODE_COLUMN not in signals.columns:
             raise ValueError(f"Входной DataFrame не содержит столбца '{settings.CODE_COLUMN}'.")
@@ -266,9 +267,18 @@ class FileCreator:
 
 
 class ConfigCreator(FileCreator):
-    def json_creator(config):
+    def save_config_to_json(config: dict) -> NoReturn:
+        """
+        Сохраняет конфигурационный словарь в JSON-файл.
+
+        Параметры:
+        - config: dict, конфигурационный словарь для сохранения.
+
+        Возвращает:
+        - None
+        """
         with open(settings.JSON_CONFIG_FILE, "w", encoding="utf-8") as json_file:
-            json.dump(config, json_file, ensure_ascii=False)
+            json.dump(config, json_file, ensure_ascii=False, indent=4)
 
 
 class DataTemplateCreator(FileCreator):
@@ -290,14 +300,15 @@ def excel_to_json(excel_signals: pd.DataFrame, excel_devices: pd.DataFrame):
     logging.debug("Dataframe prepared")
 
     # Creating mappings:
+    signals_for_mapping = DataMappingConfigurator.get_data_mapping(normalize_signals)
     emulator_mapping = EmulatorConfigurator.get_slaves_mapping(normalize_signals)
     data_mapping = DataConfigurator.get_signals_code(normalize_signals)
 
-    config = EmulatorConfigurator.get_config(data_mapping, emulator_mapping)
+    config = EmulatorConfigurator.get_config(signals_for_mapping, emulator_mapping)
     logging.debug("Mapping prepared")
 
     # Creating files:
-    ConfigCreator.json_creator(config)
+    ConfigCreator.save_config_to_json(config)
     DataTemplateCreator.data_excel_template_creator(data_mapping)
     logging.info(f"Files {settings.EXCEL_DATA_FILE} and {settings.JSON_CONFIG_FILE} "
                  f"have been created successfully")
