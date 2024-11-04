@@ -119,17 +119,56 @@ class Configurator:
         )
         return signals
 
-    def add_data_type(signals):
+    def add_data_type(signals: pd.DataFrame) -> pd.DataFrame:
+        """
+            Добавляет типы данных в DataFrame сигналов, устанавливая отсутствующие типы данных в 'hfloat'.
+
+            Параметры:
+            - signals: DataFrame, содержащий сигналы, возможно с отсутствующими значениями в столбце типа данных.
+
+            Возвращает:
+            - DataFrame с обновленным столбцом типа данных, в котором отсутствующие значения заменены на 'hfloat'.
+        """
+
         missing_count = signals[settings.VALUE_TYPE_COLUMN].isnull().sum()
         if missing_count > 0:
-            logging.warning(f"Количество отсутствующих значений в столбце типа данных: {missing_count}")
+            logging.warning(f"В столбце {settings.SIGNAL_TYPE_COLUMN} отсутствуют значения в {missing_count} строчках")
+            # Заполнение отсутствующих значений:
             signals.loc[:, settings.VALUE_TYPE_COLUMN] = signals[settings.VALUE_TYPE_COLUMN].fillna('hfloat')
-            logging.warning(f"{missing_count} сигналам установлен тип hfloat")
+            logging.info(f"{missing_count} сигналам установлен тип hfloat")
+        else:
+            logging.info("Отсутствующие значения в столбце {settings.SIGNAL_TYPE_COLUMN} не обнаружены.")
         return signals
 
 
 class DataMappingConfigurator(Configurator):
-    def get_data_mapping(signals):
+    def get_data_mapping(signals: pd.DataFrame) -> dict:
+        """
+            Создает словарь для конфига взаимосвязи между кодами в excel файле и эмуляторе.
+            В данной реализации коды сигналов в excel файле соответствуют именам в эмуляторе.
+
+            Параметры:
+            - signals: DataFrame, содержащий информацию о сигналах, включая столбцы с кодами и типами данных.
+
+            Возвращает:
+            - dict: Словарь, где ключами являются коды сигналов, а значениями — словари с ключами:
+                - "type": тип данных сигнала.
+                - "base": список, содержащий имя файла данных и код сигнала.
+
+            Пример возвращаемого значения:
+            {
+                'code1': {
+                    'type': 'hfloat',
+                    'base': ['data.xlsx', 'code1']
+                },
+                'code2': {
+                    'type': 'hint',
+                    'base': ['data.xlsx', 'code2']
+                },
+                ...
+            }
+            """
+
         mapping = {}
         for _, row in signals.iterrows():
             code = row[settings.CODE_COLUMN]
