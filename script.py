@@ -172,13 +172,13 @@ class SignalProcessor:
     @staticmethod
     def fill_missing_data_types(signals: pd.DataFrame) -> pd.DataFrame:
         """
-            Добавляет типы данных в DataFrame сигналов, устанавливая отсутствующие типы данных в 'hfloat'.
+        Добавляет типы данных в DataFrame сигналов, устанавливая отсутствующие типы данных в 'hfloat'.
 
-            Параметры:
-            - signals: DataFrame, содержащий сигналы, возможно с отсутствующими значениями в столбце типа данных.
+        Параметры:
+        - signals: DataFrame, содержащий сигналы, возможно с отсутствующими значениями в столбце типа данных.
 
-            Возвращает:
-            - DataFrame с обновленным столбцом типа данных, в котором отсутствующие значения заменены на 'hfloat'.
+        Возвращает:
+        - DataFrame с обновленным столбцом типа данных, в котором отсутствующие значения заменены на 'hfloat'.
         """
 
         missing_count = signals[settings.VALUE_TYPE_COLUMN].isnull().sum()
@@ -192,33 +192,34 @@ class SignalProcessor:
         return signals
 
 
-class DataMappingConfigurator:
-    def get_data_mapping(signals: pd.DataFrame) -> dict:
+class DataMapper:
+    @staticmethod
+    def create_data_mapping(signals: pd.DataFrame) -> dict:
         """
-            Создает словарь для конфига взаимосвязи между кодами в excel файле и эмуляторе.
-            В данной реализации коды сигналов в excel файле соответствуют именам в эмуляторе.
+        Создает словарь для конфига взаимосвязи между кодами в excel файле и эмуляторе.
+        В данной реализации коды сигналов в excel файле соответствуют именам в эмуляторе.
 
-            Параметры:
-            - signals: DataFrame, содержащий информацию о сигналах, включая столбцы с кодами и типами данных.
+        Параметры:
+        - signals: DataFrame, содержащий информацию о сигналах, включая столбцы с кодами и типами данных.
 
-            Возвращает:
-            - dict: Словарь, где ключами являются коды сигналов, а значениями — словари с ключами:
-                - "type": тип данных сигнала.
-                - "base": список, содержащий имя файла данных и код сигнала.
+        Возвращает:
+        - dict: Словарь, где ключами являются коды сигналов, а значениями — словари с ключами:
+            - "type": тип данных сигнала.
+            - "base": список, содержащий имя файла данных и код сигнала.
 
-            Пример возвращаемого значения:
-            {
-                'code1': {
-                    'type': 'hfloat',
-                    'base': ['data.xlsx', 'code1']
-                },
-                'code2': {
-                    'type': 'hint',
-                    'base': ['data.xlsx', 'code2']
-                },
-                ...
-            }
-            """
+        Пример возвращаемого значения:
+        {
+            'code1': {
+                'type': 'hfloat',
+                'base': ['data.xlsx', 'code1']
+            },
+            'code2': {
+                'type': 'hint',
+                'base': ['data.xlsx', 'code2']
+            },
+            ...
+        }
+        """
 
         mapping = {}
         for _, row in signals.iterrows():
@@ -229,34 +230,33 @@ class DataMappingConfigurator:
             }
         return mapping
 
-
-class EmulatorConfigurator:
-    def get_slaves_mapping(signals: pd.DataFrame) -> dict:
+    @staticmethod
+    def create_slaves_mapping(signals: pd.DataFrame) -> dict:
         """
-            Создает словарь для маппинга в конфиге devices(датчиков) на их slave_id и содержащиеся в них регистры.
+        Создает словарь для маппинга в конфиге devices(датчиков) на их slave_id и содержащиеся в них регистры.
 
-            Параметры:
-            - signals (pd.DataFrame): DataFrame, содержащий информацию о сигналах, включая столбцы устройств,
-              общих адресов, адресов и кодов сигналов.
+        Параметры:
+        - signals (pd.DataFrame): DataFrame, содержащий информацию о сигналах, включая столбцы устройств,
+        общих адресов, адресов и кодов сигналов.
 
-            Возвращает:
-            - dict: Словарь, где ключами являются названия устройств, а значениями — словари с ключами:
-                - "slaveID": целое число, общее для устройства.
-                - "holdings": словарь, маппящий адреса раегистров на коды сигналов.
+        Возвращает:
+        - dict: Словарь, где ключами являются названия устройств, а значениями — словари с ключами:
+            - "slaveID": целое число, общее для устройства.
+            - "holdings": словарь, маппящий адреса раегистров на коды сигналов.
 
-            Пример возвращаемого значения:
-            {
-                'device1': {
-                    'slaveID': 1,
-                    'holdings': {100: 'code1', 101: 'code2'}
-                },
-                'device2': {
-                    'slaveID': 2,
-                    'holdings': {200: 'code3', 201: 'code4'}
-                },
-                ...
-            }
-            """
+        Пример возвращаемого значения:
+        {
+            'device1': {
+                'slaveID': 1,
+                'holdings': {100: 'code1', 101: 'code2'}
+            },
+            'device2': {
+                'slaveID': 2,
+                'holdings': {200: 'code3', 201: 'code4'}
+            },
+            ...
+        }
+        """
 
         mapping = {}
         uniqe_device = signals[settings.SIGNALS_SHEET_DEVICE_COLUMN].unique()
@@ -268,7 +268,27 @@ class EmulatorConfigurator:
             }
         return mapping
 
-    def get_config(data_mapping: dict, emulator_mapping: dict) -> dict:
+    @staticmethod
+    def get_signals_code(signals: pd.DataFrame) -> pd.DataFrame:
+        """
+        Создает пустой DataFrame с колонками, соответствующими кодам сигналов из входного DataFrame.
+
+        Параметры:
+        - signals: DataFrame, содержащий столбец с кодами сигналов.
+
+        Возвращает:
+        - pd.DataFrame: Пустой DataFrame, колонки которого — коды сигналов.
+        """
+
+        # Проверяем, содержит ли DataFrame необходимый столбец
+        if settings.CODE_COLUMN not in signals.columns:
+            raise ValueError(f"Входной DataFrame не содержит столбца '{settings.CODE_COLUMN}'.")
+
+        return pd.DataFrame(columns=signals[settings.CODE_COLUMN])
+
+class ConfigGenerator:
+    @staticmethod
+    def generate_config(data_mapping: dict, emulator_mapping: dict) -> dict:
         """
             Генерирует итоговый конфигурационный словарь для эмулятора.
 
@@ -291,26 +311,6 @@ class EmulatorConfigurator:
             }
         }
         return config
-
-
-class DataConfigurator:
-    def get_signals_code(signals: pd.DataFrame) -> pd.DataFrame:
-        """
-        Создает пустой DataFrame с колонками, соответствующими кодам сигналов из входного DataFrame.
-
-        Параметры:
-        - signals: DataFrame, содержащий столбец с кодами сигналов.
-
-        Возвращает:
-        - pd.DataFrame: Пустой DataFrame, колонки которого — коды сигналов.
-        """
-
-        # Проверяем, содержит ли DataFrame необходимый столбец
-        if settings.CODE_COLUMN not in signals.columns:
-            raise ValueError(f"Входной DataFrame не содержит столбца '{settings.CODE_COLUMN}'.")
-
-        return pd.DataFrame(columns=signals[settings.CODE_COLUMN])
-
 
 class FileCreator:
     pass
@@ -367,17 +367,20 @@ def main():
     normalize_signals = processor.fill_missing_data_types(signals_with_concatenated_devices)
     logging.debug("Dataframe prepared")
 
-    # Creating mappings:
-    signals_for_mapping = DataMappingConfigurator.get_data_mapping(normalize_signals)
-    emulator_mapping = EmulatorConfigurator.get_slaves_mapping(normalize_signals)
-    data_mapping = DataConfigurator.get_signals_code(normalize_signals)
+    # Создание маппингов:
+    data_mapper = DataMapper()
+    signals_for_mapping = data_mapper.create_data_mapping(normalize_signals)
+    emulator_mapping = data_mapper.create_slaves_mapping(normalize_signals)
+    signals_template = data_mapper.get_signals_code(normalize_signals)
 
-    config = EmulatorConfigurator.get_config(signals_for_mapping, emulator_mapping)
+    # Генерация конифга:
+    config_generator = ConfigGenerator()
+    config = config_generator.generate_config(signals_for_mapping, emulator_mapping)
     logging.debug("Mapping prepared")
 
     # Creating files:
     ConfigCreator.save_config_to_json(config)
-    DataTemplateCreator.data_excel_template_creator(data_mapping)
+    DataTemplateCreator.data_excel_template_creator(signals_template)
     logging.info(f"Files {settings.EXCEL_DATA_FILE} and {settings.JSON_CONFIG_FILE} "
                  f"have been created successfully")
 
