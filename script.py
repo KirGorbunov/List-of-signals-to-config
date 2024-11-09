@@ -269,7 +269,7 @@ class DataMapper:
         return mapping
 
     @staticmethod
-    def get_signals_code(signals: pd.DataFrame) -> pd.DataFrame:
+    def create_signals_template(signals: pd.DataFrame) -> pd.DataFrame:
         """
         Создает пустой DataFrame с колонками, соответствующими кодам сигналов из входного DataFrame.
 
@@ -369,14 +369,15 @@ def main():
 
     # Создание маппингов:
     data_mapper = DataMapper()
-    signals_for_mapping = data_mapper.create_data_mapping(normalize_signals)
-    emulator_mapping = data_mapper.create_slaves_mapping(normalize_signals)
-    signals_template = data_mapper.get_signals_code(normalize_signals)
+    data_mapping = data_mapper.create_data_mapping(normalize_signals)
+    slaves_mapping = data_mapper.create_slaves_mapping(normalize_signals)
+    signals_template = data_mapper.create_signals_template(normalize_signals)
+    logging.debug("Маппинги созданы")
 
     # Генерация конифга:
     config_generator = ConfigGenerator()
-    config = config_generator.generate_config(signals_for_mapping, emulator_mapping)
-    logging.debug("Mapping prepared")
+    config = config_generator.generate_config(data_mapping, slaves_mapping)
+    logging.debug("Конфиг сгенерирован")
 
     # Creating files:
     ConfigCreator.save_config_to_json(config)
