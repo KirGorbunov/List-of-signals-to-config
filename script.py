@@ -83,8 +83,11 @@ class DataConstructor:
         return merged_data
 
 
-class Configurator:
-    def get_measured_rows(df: pd.DataFrame) -> pd.DataFrame:
+class SignalProcessor:
+    """Класс для обработки и подготовки данных сигналов."""
+
+    @staticmethod
+    def filter_signals(df: pd.DataFrame) -> pd.DataFrame:
         """
             Фильтрует DataFrame, оставляя только сигналы, которые необходимо эмулировать (проверка на тип сигнала)
             и для которых задан modbus-адрес (проверка на наличие адреса).
@@ -101,6 +104,7 @@ class Configurator:
             (df[settings.ADDRESS_COLUMN].notna())
             ]
 
+    @staticmethod
     def change_code_name(signals: pd.DataFrame) -> pd.DataFrame:
         """
         Меняет столбец 'code', если количество записей для каждой комбинации
@@ -127,6 +131,7 @@ class Configurator:
         )
         return signals
 
+    @staticmethod
     def get_unique_signals(signals: pd.DataFrame) -> pd.DataFrame:
         """
         Удаляет из DataFrame повторные составные сигналы, оставляя только один экзепляр.
@@ -140,9 +145,10 @@ class Configurator:
 
         return signals.drop_duplicates(subset=[settings.CODE_COLUMN]).copy()
 
+    @staticmethod
     def concatenate_devices(signals: pd.DataFrame) -> pd.DataFrame:
         """
-        Объединяет (конкатенирует) название датчиков, если они имеют slave_id (common address)
+        Объединяет (конкатенирует) название датчиков, если они имеют одинаковый slave_id (common address)
 
         Параметры:
         - signals: DataFrame, в котором каждый датчик представлен в единственном экзепляре
@@ -163,7 +169,8 @@ class Configurator:
         )
         return signals
 
-    def add_data_type(signals: pd.DataFrame) -> pd.DataFrame:
+    @staticmethod
+    def fill_missing_data_types(signals: pd.DataFrame) -> pd.DataFrame:
         """
             Добавляет типы данных в DataFrame сигналов, устанавливая отсутствующие типы данных в 'hfloat'.
 
@@ -185,7 +192,7 @@ class Configurator:
         return signals
 
 
-class DataMappingConfigurator(Configurator):
+class DataMappingConfigurator:
     def get_data_mapping(signals: pd.DataFrame) -> dict:
         """
             Создает словарь для конфига взаимосвязи между кодами в excel файле и эмуляторе.
@@ -223,7 +230,7 @@ class DataMappingConfigurator(Configurator):
         return mapping
 
 
-class EmulatorConfigurator(Configurator):
+class EmulatorConfigurator:
     def get_slaves_mapping(signals: pd.DataFrame) -> dict:
         """
             Создает словарь для маппинга в конфиге devices(датчиков) на их slave_id и содержащиеся в них регистры.
@@ -286,7 +293,7 @@ class EmulatorConfigurator(Configurator):
         return config
 
 
-class DataConfigurator(Configurator):
+class DataConfigurator:
     def get_signals_code(signals: pd.DataFrame) -> pd.DataFrame:
         """
         Создает пустой DataFrame с колонками, соответствующими кодам сигналов из входного DataFrame.
@@ -351,12 +358,13 @@ def main():
     merged_data = DataConstructor.merge(signals_data, devices_data)
     logging.debug("Данные сигналов и устройств объединены.")
 
-    # Dataframe prepare:
-    signals = Configurator.get_measured_rows(merged_data)
-    signals = Configurator.change_code_name(signals)
-    signals = Configurator.concatenate_devices(signals)
-    unique_signals = Configurator.get_unique_signals(signals)
-    normalize_signals = Configurator.add_data_type(unique_signals)
+    # Обработка сигналов:
+    processor = SignalProcessor()
+    filtered_signals = processor.filter_signals(merged_data)
+    signals_with_new_names = processor.change_code_name(filtered_signals)
+    unique_signals = processor.get_unique_signals(signals_with_new_names)
+    signals_with_concatenated_devices = processor.concatenate_devices(unique_signals)
+    normalize_signals = processor.fill_missing_data_types(signals_with_concatenated_devices)
     logging.debug("Dataframe prepared")
 
     # Creating mappings:
