@@ -105,45 +105,36 @@ class SignalProcessor:
             ]
 
     @staticmethod
-    def change_code_name(signals: pd.DataFrame) -> pd.DataFrame:
+    def group_signals(signals: pd.DataFrame) -> pd.DataFrame:
         """
-        Меняет столбец 'code', если количество записей для каждой комбинации
-        'address' и 'common_address' > 1, т.е. когда на одном регистре содержиться несколько сигналов.
+        Группирует сигналы, относящиеся к одному регистру (количество записей для каждой комбинации
+        'address' и 'common_address' > 1), и изменяет название кода сигнала ('code').
+        Если в регистре только один сигнал, к коду сигнала добавляется название гейтвея.
 
         Параметры:
         - signals: общий DataFrame cо всеми измеряемыми сигналами
 
         Возвращает:
-        - исходный DataFrame с измененным столбцом 'code'.
-        Если для комбинации ('address', 'common_address') существует несколько сигналов, к 'code' добавляется
-        количество сигналов, название гейтвея и modbus-адрес. В противном случае к 'code' добавляется только
-        название гейтвея.
+        -  DataFrame со сгруппированными сигналами и измененным столбцом 'code'.
+        Если сигналы относятся к одному регистру (одинаковые 'address' и 'common_address'),
+        к 'code' добавляется количество сигналов, название гейтвея и modbus-адрес.
+        В противном случае к 'code' добавляется только название гейтвея.
         """
+
+        signals = signals.copy()
 
         # Вычисление количества записей для каждой комбинации 'address' и 'common_address':
-        signal_counts = signals.groupby(['address', 'common_address']).transform('size')
+        group_counts = signals.groupby([settings.ADDRESS_COLUMN, settings.COMMON_ADDRESS_COLUMN]).transform('size')
 
         # Изменение столбца code:
-        signals['code'] = np.where(
-            signal_counts > 1,
-            signal_counts.astype(str) + '_signals_' + signals['gateway'] + '_' + signals['address'],
-            signals['code'] + '_' + signals['gateway']
+        signals[settings.CODE_COLUMN] = np.where(
+            group_counts > 1,
+            group_counts.astype(str) + '_signals_' + signals[settings.GATEWAY_COLUMN] + '_' + signals[settings.ADDRESS_COLUMN],
+            signals[settings.CODE_COLUMN] + '_' + signals[settings.GATEWAY_COLUMN]
         )
+        # Удаление дубликатов:
+        signals = signals.drop_duplicates(subset=[settings.CODE_COLUMN])
         return signals
-
-    @staticmethod
-    def get_unique_signals(signals: pd.DataFrame) -> pd.DataFrame:
-        """
-        Удаляет из DataFrame повторные составные сигналы, оставляя только один экзепляр.
-
-        Параметры:
-        - signals: DataFrame c дублированием кодов состовных сигналов
-
-        Возвращает:
-        - DataFrame с уникальными сигналами, где для каждого кода сохранена одна запись.
-        """
-
-        return signals.drop_duplicates(subset=[settings.CODE_COLUMN]).copy()
 
     @staticmethod
     def concatenate_devices(signals: pd.DataFrame) -> pd.DataFrame:
@@ -287,6 +278,8 @@ class DataMapper:
         return pd.DataFrame(columns=signals[settings.CODE_COLUMN])
 
 class ConfigGenerator:
+    """Класс для генерации конифга эмулятора."""
+
     @staticmethod
     def generate_config(data_mapping: dict, emulator_mapping: dict) -> dict:
         """
@@ -313,11 +306,10 @@ class ConfigGenerator:
         return config
 
 class FileCreator:
-    pass
+    """Класс для создания конфигурационных файлов."""
 
-
-class ConfigCreator(FileCreator):
-    def save_config_to_json(config: dict) -> NoReturn:
+    @staticmethod
+    def create_json_with_config(config: dict) -> NoReturn:
         """
         Сохраняет конфигурационный словарь в JSON-файл.
 
@@ -330,9 +322,8 @@ class ConfigCreator(FileCreator):
         with open(settings.JSON_CONFIG_FILE, "w", encoding="utf-8") as json_file:
             json.dump(config, json_file, ensure_ascii=False, indent=4)
 
-
-class DataTemplateCreator(FileCreator):
-    def data_excel_template_creator(data_mapping: pd.DataFrame) -> NoReturn:
+    @staticmethod
+    def create_excel_data_template(data_mapping: pd.DataFrame) -> NoReturn:
         """
         Сохраняет коды сигналов из DataFrame в Excel-файл.
 
@@ -361,11 +352,10 @@ def main():
     # Обработка сигналов:
     processor = SignalProcessor()
     filtered_signals = processor.filter_signals(merged_data)
-    signals_with_new_names = processor.change_code_name(filtered_signals)
-    unique_signals = processor.get_unique_signals(signals_with_new_names)
-    signals_with_concatenated_devices = processor.concatenate_devices(unique_signals)
+    grouped_signals = processor.group_signals(filtered_signals)
+    signals_with_concatenated_devices = processor.concatenate_devices(grouped_signals)
     normalize_signals = processor.fill_missing_data_types(signals_with_concatenated_devices)
-    logging.debug("Dataframe prepared")
+    logging.debug("Сигналы обработаны")
 
     # Создание маппингов:
     data_mapper = DataMapper()
@@ -379,11 +369,12 @@ def main():
     config = config_generator.generate_config(data_mapping, slaves_mapping)
     logging.debug("Конфиг сгенерирован")
 
-    # Creating files:
-    ConfigCreator.save_config_to_json(config)
-    DataTemplateCreator.data_excel_template_creator(signals_template)
-    logging.info(f"Files {settings.EXCEL_DATA_FILE} and {settings.JSON_CONFIG_FILE} "
-                 f"have been created successfully")
+    # Создание файлов:
+    file_creator = FileCreator()
+    file_creator.create_json_with_config(config)
+    file_creator.create_excel_data_template(signals_template)
+    logging.info(f"Файлы {settings.EXCEL_DATA_FILE} и {settings.JSON_CONFIG_FILE} "
+                 f"успешно созданы")
 
 
 if __name__ == "__main__":
