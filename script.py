@@ -129,9 +129,12 @@ class SignalProcessor:
         # Изменение столбца code:
         signals[settings.CODE_COLUMN] = np.where(
             group_counts > 1,
-            group_counts.astype(str) + '_signals_' + signals[settings.GATEWAY_COLUMN] + '_' + signals[settings.ADDRESS_COLUMN],
+            group_counts.astype(str) + '_signals_' +
+            signals[settings.GATEWAY_COLUMN] + '_' +
+            signals[settings.ADDRESS_COLUMN],
             signals[settings.CODE_COLUMN] + '_' + signals[settings.GATEWAY_COLUMN]
         )
+
         # Удаление дубликатов:
         signals = signals.drop_duplicates(subset=[settings.CODE_COLUMN])
         return signals
@@ -277,6 +280,7 @@ class DataMapper:
 
         return pd.DataFrame(columns=signals[settings.CODE_COLUMN])
 
+
 class ConfigGenerator:
     """Класс для генерации конифга эмулятора."""
 
@@ -304,6 +308,7 @@ class ConfigGenerator:
             }
         }
         return config
+
 
 class FileCreator:
     """Класс для создания конфигурационных файлов."""
