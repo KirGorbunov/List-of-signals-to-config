@@ -177,12 +177,12 @@ class SignalProcessor:
 
         missing_count = signals[settings.VALUE_TYPE_COLUMN].isnull().sum()
         if missing_count > 0:
-            logging.warning(f"В столбце {settings.SIGNAL_TYPE_COLUMN} отсутствуют значения в {missing_count} строчках")
+            logging.warning(f"В столбце {settings.VALUE_TYPE_COLUMN} отсутствуют значения в {missing_count} строчках")
             # Заполнение отсутствующих значений:
             signals.loc[:, settings.VALUE_TYPE_COLUMN] = signals[settings.VALUE_TYPE_COLUMN].fillna('hfloat')
             logging.info(f"{missing_count} сигналам установлен тип hfloat")
         else:
-            logging.info("Отсутствующие значения в столбце {settings.SIGNAL_TYPE_COLUMN} не обнаружены.")
+            logging.info(f"Отсутствующие значения в столбце {settings.VALUE_TYPE_COLUMN} не обнаружены.")
         return signals
 
 
