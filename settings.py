@@ -2,10 +2,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    # Логика деления на файлы:
+    DIVIDE_BY_ASSET: bool = True
+
     # Названия файлов:
     LIST_OF_SIGNALS_FILE: str
-    EXCEL_DATA_FILE: str = "data.xlsx"
-    JSON_CONFIG_FILE: str = "config.json"
+    EXCEL_DATA_FILE: str = "data"
+    JSON_CONFIG_FILE: str = "config"
 
     # Названия страниц в excel файле:
     SIGNALS_SHEET: str = "signals"
@@ -17,6 +20,7 @@ class Settings(BaseSettings):
     SIGNAL_TYPE_COLUMN: str = "signal_type"
     ADDRESS_COLUMN: str = "address"
     VALUE_TYPE_COLUMN: str = "value_type"
+    ASSET_COLUMN: str = "asset"
 
     GATEWAY_COLUMN: str = "gateway"
     DEVICES_SHEET_DEVICE_COLUMN: str = "code"

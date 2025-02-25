@@ -13,6 +13,9 @@ logging.basicConfig(
     style="{",
 )
 
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
+pd.set_option('display.width', None)
 
 class DataLoader:
     """Класс для загрузки данных сигналов и устройств из Excel-файлов."""
@@ -31,7 +34,8 @@ class DataLoader:
                 settings.CODE_COLUMN,
                 settings.SIGNAL_TYPE_COLUMN,
                 settings.ADDRESS_COLUMN,
-                settings.VALUE_TYPE_COLUMN
+                settings.VALUE_TYPE_COLUMN,
+                settings.ASSET_COLUMN
             ],
             dtype=str
         )
@@ -220,7 +224,7 @@ class DataMapper:
             code = row[settings.CODE_COLUMN]
             mapping[code] = {
                 "type": row[settings.VALUE_TYPE_COLUMN],
-                "base": [settings.EXCEL_DATA_FILE, code]
+                "base": [f"{settings.EXCEL_DATA_FILE}_{row[settings.ASSET_COLUMN]}.xlsx", code]
             }
         return mapping
 
@@ -314,7 +318,7 @@ class FileCreator:
     """Класс для создания конфигурационных файлов."""
 
     @staticmethod
-    def create_json_with_config(config: dict) -> NoReturn:
+    def create_json_with_config(config: dict, asset: str) -> NoReturn:
         """
         Сохраняет конфигурационный словарь в JSON-файл.
 
@@ -324,11 +328,11 @@ class FileCreator:
         Возвращает:
         - None
         """
-        with open(settings.JSON_CONFIG_FILE, "w", encoding="utf-8") as json_file:
+        with open(f"{settings.JSON_CONFIG_FILE}_{asset}.json", "w", encoding="utf-8") as json_file:
             json.dump(config, json_file, ensure_ascii=False, indent=4)
 
     @staticmethod
-    def create_excel_data_template(data_mapping: pd.DataFrame) -> NoReturn:
+    def create_excel_data_template(data_mapping: pd.DataFrame, asset: str) -> NoReturn:
         """
         Сохраняет коды сигналов из DataFrame в Excel-файл.
 
@@ -338,7 +342,7 @@ class FileCreator:
         Возвращает:
         - None
         """
-        data_mapping.to_excel(settings.EXCEL_DATA_FILE)
+        data_mapping.to_excel(f"{settings.EXCEL_DATA_FILE}_{asset}.xlsx")
 
 
 def main():
@@ -360,26 +364,38 @@ def main():
     grouped_signals = processor.group_signals(filtered_signals)
     signals_with_concatenated_devices = processor.concatenate_devices(grouped_signals)
     normalize_signals = processor.fill_missing_data_types(signals_with_concatenated_devices)
+    # TODO: all these logic put to divided signals functions
+    all_normalize_signals = {'all': normalize_signals}
+
+    if settings.DIVIDE_BY_ASSET:
+        all_normalize_signals = {}
+        assets = normalize_signals[settings.ASSET_COLUMN].unique()
+        for asset in assets:
+            signals_by_asset = normalize_signals[normalize_signals[settings.ASSET_COLUMN] == asset]
+            all_normalize_signals[asset] = signals_by_asset
     logging.debug("Сигналы обработаны")
+    print(all_normalize_signals)
 
     # Создание маппингов:
-    data_mapper = DataMapper()
-    data_mapping = data_mapper.create_data_mapping(normalize_signals)
-    slaves_mapping = data_mapper.create_slaves_mapping(normalize_signals)
-    signals_template = data_mapper.create_signals_template(normalize_signals)
-    logging.debug("Маппинги созданы")
+    for asset, normalize_signals in all_normalize_signals.items():
+        data_mapper = DataMapper()
+        data_mapping = data_mapper.create_data_mapping(normalize_signals)
+        print(signals_by_asset)
+        slaves_mapping = data_mapper.create_slaves_mapping(normalize_signals)
+        signals_template = data_mapper.create_signals_template(normalize_signals)
+        logging.debug("Маппинги созданы")
 
-    # Генерация конифга:
-    config_generator = ConfigGenerator()
-    config = config_generator.generate_config(data_mapping, slaves_mapping)
-    logging.debug("Конфиг сгенерирован")
+        # Генерация конифга:
+        config_generator = ConfigGenerator()
+        config = config_generator.generate_config(data_mapping, slaves_mapping)
+        logging.debug("Конфиг сгенерирован")
 
-    # Создание файлов:
-    file_creator = FileCreator()
-    file_creator.create_json_with_config(config)
-    file_creator.create_excel_data_template(signals_template)
-    logging.info(f"Файлы {settings.EXCEL_DATA_FILE} и {settings.JSON_CONFIG_FILE} "
-                 f"успешно созданы")
+        # Создание файлов:
+        file_creator = FileCreator()
+        file_creator.create_json_with_config(config, asset)
+        file_creator.create_excel_data_template(signals_template, asset)
+        logging.info(f"Файлы {settings.EXCEL_DATA_FILE} и {settings.JSON_CONFIG_FILE} "
+                     f"успешно созданы")
 
 
 if __name__ == "__main__":
