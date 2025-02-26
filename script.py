@@ -189,15 +189,41 @@ class SignalProcessor:
             logging.info(f"Отсутствующие значения в столбце {settings.VALUE_TYPE_COLUMN} не обнаружены.")
         return signals
 
+    @staticmethod
+    def divide_by_assets(signals: pd.DataFrame) -> dict[str, pd.DataFrame]:
+        """
+        Разбивает сигналы по ассетам (если переменная DIVIDE_BY_ASSET в .env файле в состоянии True).
+
+        Параметры:
+        - signals: DataFrame, содержащий все сигналы.
+
+        Возвращает:
+        - dict: словарь из ключей с названием ассетов и значений (с Dataframe сигналов этих ассетов),
+         ключ "all_assets" - и общий Dataframe сигналов если разделение не требуется.
+        """
+
+        signals_divided_by_assets = {'all_assets': signals}
+
+        if settings.DIVIDE_BY_ASSET:
+            signals_divided_by_assets = {}
+            assets = signals[settings.ASSET_COLUMN].unique()
+            for asset in assets:
+                signals_by_asset = signals[signals[settings.ASSET_COLUMN] == asset]
+                signals_divided_by_assets[asset] = signals_by_asset
+        return signals_divided_by_assets
+
 
 class DataMapper:
+    """Класс для создания маппингов."""
+
     @staticmethod
-    def create_data_mapping(signals: pd.DataFrame) -> dict:
+    def create_data_mapping(asset: str, signals: pd.DataFrame) -> dict:
         """
         Создает словарь для конфига взаимосвязи между кодами в excel файле и эмуляторе.
         В данной реализации коды сигналов в excel файле соответствуют именам в эмуляторе.
 
         Параметры:
+        - asset: оборудование для которого создается маппинг
         - signals: DataFrame, содержащий информацию о сигналах, включая столбцы с кодами и типами данных.
 
         Возвращает:
@@ -224,7 +250,7 @@ class DataMapper:
             code = row[settings.CODE_COLUMN]
             mapping[code] = {
                 "type": row[settings.VALUE_TYPE_COLUMN],
-                "base": [f"{settings.EXCEL_DATA_FILE}_{row[settings.ASSET_COLUMN]}.xlsx", code]
+                "base": [f"{settings.EXCEL_DATA_FILE}_{asset}.xlsx", code]
             }
         return mapping
 
@@ -364,25 +390,14 @@ def main():
     grouped_signals = processor.group_signals(filtered_signals)
     signals_with_concatenated_devices = processor.concatenate_devices(grouped_signals)
     normalize_signals = processor.fill_missing_data_types(signals_with_concatenated_devices)
-    # TODO: all these logic put to divided signals functions
-    all_normalize_signals = {'all': normalize_signals}
-
-    if settings.DIVIDE_BY_ASSET:
-        all_normalize_signals = {}
-        assets = normalize_signals[settings.ASSET_COLUMN].unique()
-        for asset in assets:
-            signals_by_asset = normalize_signals[normalize_signals[settings.ASSET_COLUMN] == asset]
-            all_normalize_signals[asset] = signals_by_asset
-    logging.debug("Сигналы обработаны")
-    print(all_normalize_signals)
+    signals_divided_by_assets = processor.divide_by_assets(normalize_signals)
 
     # Создание маппингов:
-    for asset, normalize_signals in all_normalize_signals.items():
+    for asset, signals in signals_divided_by_assets.items():
         data_mapper = DataMapper()
-        data_mapping = data_mapper.create_data_mapping(normalize_signals)
-        print(signals_by_asset)
-        slaves_mapping = data_mapper.create_slaves_mapping(normalize_signals)
-        signals_template = data_mapper.create_signals_template(normalize_signals)
+        data_mapping = data_mapper.create_data_mapping(asset, signals)
+        slaves_mapping = data_mapper.create_slaves_mapping(signals)
+        signals_template = data_mapper.create_signals_template(signals)
         logging.debug("Маппинги созданы")
 
         # Генерация конифга:
