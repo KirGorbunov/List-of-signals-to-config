@@ -192,7 +192,8 @@ class SignalProcessor:
     @staticmethod
     def divide_by_assets(signals: pd.DataFrame) -> dict[str, pd.DataFrame]:
         """
-        Разбивает сигналы по ассетам (если переменная DIVIDE_BY_ASSET в .env файле в состоянии True).
+        Разбивает сигналы по ассетам (если переменная DIVIDE_CONFIG_BY_ASSET или DIVIDE_DATA_BY_ASSET
+        в .env файле в состоянии True).
 
         Параметры:
         - signals: DataFrame, содержащий все сигналы.
@@ -204,8 +205,7 @@ class SignalProcessor:
 
         signals_divided_by_assets = {'all_assets': signals}
 
-        if settings.DIVIDE_BY_ASSET:
-            signals_divided_by_assets = {}
+        if settings.DIVIDE_CONFIG_BY_ASSET or settings.DIVIDE_DATA_BY_ASSET:
             assets = signals[settings.ASSET_COLUMN].unique()
             for asset in assets:
                 signals_by_asset = signals[signals[settings.ASSET_COLUMN] == asset]
@@ -248,10 +248,16 @@ class DataMapper:
         mapping = {}
         for _, row in signals.iterrows():
             code = row[settings.CODE_COLUMN]
-            mapping[code] = {
-                "type": row[settings.VALUE_TYPE_COLUMN],
-                "base": [f"{settings.EXCEL_DATA_FILE}_{asset}.xlsx", code]
-            }
+            if settings.DIVIDE_DATA_BY_ASSET:
+                mapping[code] = {
+                    "type": row[settings.VALUE_TYPE_COLUMN],
+                    "base": [f"{settings.EXCEL_DATA_FILE}_{row[settings.ASSET_COLUMN]}.xlsx", code]
+                }
+            else:
+                mapping[code] = {
+                    "type": row[settings.VALUE_TYPE_COLUMN],
+                    "base": [f"{settings.EXCEL_DATA_FILE}_all_assets.xlsx", code]
+                }
         return mapping
 
     @staticmethod
@@ -354,8 +360,12 @@ class FileCreator:
         Возвращает:
         - None
         """
-        with open(f"{settings.JSON_CONFIG_FILE}_{asset}.json", "w", encoding="utf-8") as json_file:
-            json.dump(config, json_file, ensure_ascii=False, indent=4)
+        if not settings.DIVIDE_CONFIG_BY_ASSET and asset == 'all_assets':
+            with open(f"{settings.JSON_CONFIG_FILE}_{asset}.json", "w", encoding="utf-8") as json_file:
+                json.dump(config, json_file, ensure_ascii=False, indent=4)
+        elif settings.DIVIDE_CONFIG_BY_ASSET and asset != 'all_assets':
+            with open(f"{settings.JSON_CONFIG_FILE}_{asset}.json", "w", encoding="utf-8") as json_file:
+                json.dump(config, json_file, ensure_ascii=False, indent=4)
 
     @staticmethod
     def create_excel_data_template(data_mapping: pd.DataFrame, asset: str) -> NoReturn:
@@ -368,8 +378,10 @@ class FileCreator:
         Возвращает:
         - None
         """
-        data_mapping.to_excel(f"{settings.EXCEL_DATA_FILE}_{asset}.xlsx")
-
+        if not settings.DIVIDE_DATA_BY_ASSET and asset == 'all_assets':
+            data_mapping.to_excel(f"{settings.EXCEL_DATA_FILE}_{asset}.xlsx")
+        elif settings.DIVIDE_DATA_BY_ASSET and asset != 'all_assets':
+            data_mapping.to_excel(f"{settings.EXCEL_DATA_FILE}_{asset}.xlsx")
 
 def main():
     # Загрузка данных

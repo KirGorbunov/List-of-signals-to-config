@@ -3,7 +3,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     # Логика деления на файлы:
-    DIVIDE_BY_ASSET: bool = True
+    DIVIDE_CONFIG_BY_ASSET: bool = True
+    DIVIDE_DATA_BY_ASSET: bool = True
 
     # Названия файлов:
     LIST_OF_SIGNALS_FILE: str
