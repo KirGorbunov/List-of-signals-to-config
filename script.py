@@ -11,6 +11,7 @@ logging.basicConfig(
     level=settings.LOGGING_LEVEL,
     format="{levelname} - {message}",
     style="{",
+    encoding='utf-8'
 )
 
 pd.set_option('display.max_rows', None)
@@ -249,15 +250,13 @@ class DataMapper:
         for _, row in signals.iterrows():
             code = row[settings.CODE_COLUMN]
             if settings.DIVIDE_DATA_BY_ASSET:
-                mapping[code] = {
-                    "type": row[settings.VALUE_TYPE_COLUMN],
-                    "base": [f"{settings.EXCEL_DATA_FILE}_{row[settings.ASSET_COLUMN]}.xlsx", code]
-                }
+                file_suffix = row[settings.ASSET_COLUMN]
             else:
-                mapping[code] = {
-                    "type": row[settings.VALUE_TYPE_COLUMN],
-                    "base": [f"{settings.EXCEL_DATA_FILE}_all_assets.xlsx", code]
-                }
+                file_suffix = "all_assets"
+            mapping[code] = {
+                "type": row[settings.VALUE_TYPE_COLUMN],
+                "base": [f"{settings.EXCEL_DATA_FILE}_{file_suffix}.xlsx", code]
+            }
         return mapping
 
     @staticmethod
@@ -363,9 +362,12 @@ class FileCreator:
         if not settings.DIVIDE_CONFIG_BY_ASSET and asset == 'all_assets':
             with open(f"{settings.JSON_CONFIG_FILE}_{asset}.json", "w", encoding="utf-8") as json_file:
                 json.dump(config, json_file, ensure_ascii=False, indent=4)
+                logging.info(f"Файл {settings.JSON_CONFIG_FILE}_{asset}.json успешно создан")
         elif settings.DIVIDE_CONFIG_BY_ASSET and asset != 'all_assets':
             with open(f"{settings.JSON_CONFIG_FILE}_{asset}.json", "w", encoding="utf-8") as json_file:
                 json.dump(config, json_file, ensure_ascii=False, indent=4)
+                logging.info(f"Файл {settings.JSON_CONFIG_FILE}_{asset}.json успешно создан")
+
 
     @staticmethod
     def create_excel_data_template(data_mapping: pd.DataFrame, asset: str) -> NoReturn:
@@ -380,8 +382,10 @@ class FileCreator:
         """
         if not settings.DIVIDE_DATA_BY_ASSET and asset == 'all_assets':
             data_mapping.to_excel(f"{settings.EXCEL_DATA_FILE}_{asset}.xlsx")
+            logging.info(f"Файл {settings.EXCEL_DATA_FILE}_{asset}.xlsx успешно создан")
         elif settings.DIVIDE_DATA_BY_ASSET and asset != 'all_assets':
             data_mapping.to_excel(f"{settings.EXCEL_DATA_FILE}_{asset}.xlsx")
+            logging.info(f"Файл {settings.EXCEL_DATA_FILE}_{asset}.xlsx успешно создан")
 
 def main():
     # Загрузка данных
@@ -410,19 +414,18 @@ def main():
         data_mapping = data_mapper.create_data_mapping(asset, signals)
         slaves_mapping = data_mapper.create_slaves_mapping(signals)
         signals_template = data_mapper.create_signals_template(signals)
-        logging.debug("Маппинги созданы")
+        logging.debug(f"Маппинги для {asset} созданы")
 
         # Генерация конифга:
         config_generator = ConfigGenerator()
         config = config_generator.generate_config(data_mapping, slaves_mapping)
-        logging.debug("Конфиг сгенерирован")
+        logging.debug(f"Конфиг для ассета {asset} сгенерирован")
 
         # Создание файлов:
         file_creator = FileCreator()
         file_creator.create_json_with_config(config, asset)
         file_creator.create_excel_data_template(signals_template, asset)
-        logging.info(f"Файлы {settings.EXCEL_DATA_FILE} и {settings.JSON_CONFIG_FILE} "
-                     f"успешно созданы")
+    logging.info(f"Все файлы созданы")
 
 
 if __name__ == "__main__":
