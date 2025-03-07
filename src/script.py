@@ -5,7 +5,7 @@ from typing import NoReturn
 import numpy as np
 import pandas as pd
 
-from settings import settings
+from src.settings import settings
 
 logging.basicConfig(
     level=settings.LOGGING_LEVEL,
@@ -13,10 +13,6 @@ logging.basicConfig(
     style="{",
     encoding='utf-8'
 )
-
-pd.set_option('display.max_rows', None)
-pd.set_option('display.max_columns', None)
-pd.set_option('display.width', None)
 
 class DataLoader:
     """Класс для загрузки данных сигналов и устройств из Excel-файлов."""
@@ -255,7 +251,7 @@ class DataMapper:
                 file_suffix = "all_assets"
             mapping[code] = {
                 "type": row[settings.VALUE_TYPE_COLUMN],
-                "base": [f"{settings.EXCEL_DATA_FILE}_{file_suffix}.xlsx", code]
+                "base": [f"{settings.EXCEL_DATA_NAME}_{file_suffix}.xlsx", code]
             }
         return mapping
 

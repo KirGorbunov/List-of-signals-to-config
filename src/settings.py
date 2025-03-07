@@ -1,15 +1,21 @@
+import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    # Базовая директория
+    BASE_DIR: str = os.path.dirname(os.path.abspath(__file__))
+    INPUT_FILES_DIR: str = os.path.join(BASE_DIR, "..", "input_files")
+    OUTPUT_FILES_DIR: str = os.path.join(BASE_DIR, "..", "output_files")
+
     # Логика деления на файлы:
     DIVIDE_CONFIG_BY_ASSET: bool = True
     DIVIDE_DATA_BY_ASSET: bool = True
 
     # Названия файлов:
-    LIST_OF_SIGNALS_FILE: str
-    EXCEL_DATA_FILE: str = "data"
-    JSON_CONFIG_FILE: str = "config"
+    LIST_OF_SIGNALS_NAME: str
+    EXCEL_DATA_NAME: str = "data"
+    JSON_CONFIG_NAME: str = "config"
 
     # Названия страниц в excel файле:
     SIGNALS_SHEET: str = "signals"
@@ -42,7 +48,18 @@ class Settings(BaseSettings):
     # Уровень логгирования:
     LOGGING_LEVEL: str = 'INFO'
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_file="../.env", env_file_encoding="utf-8")
 
+    @property
+    def LIST_OF_SIGNALS_FILE(self):
+        return os.path.join(self.INPUT_FILES_DIR, self.LIST_OF_SIGNALS_NAME)
+
+    @property
+    def EXCEL_DATA_FILE(self):
+        return os.path.join(self.OUTPUT_FILES_DIR, self.EXCEL_DATA_NAME)
+
+    @property
+    def JSON_CONFIG_FILE(self):
+        return os.path.join(self.OUTPUT_FILES_DIR, self.JSON_CONFIG_NAME)
 
 settings = Settings()
