@@ -1,12 +1,12 @@
-import os
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     # Базовая директория
-    BASE_DIR: str = os.path.dirname(os.path.abspath(__file__))
-    INPUT_FILES_DIR: str = os.path.join(BASE_DIR, "..", "input_files")
-    OUTPUT_FILES_DIR: str = os.path.join(BASE_DIR, "..", "output_files")
+    BASE_DIR: Path = Path(__file__).resolve().parent
+    INPUT_FILES_DIR: Path = BASE_DIR / ".." / "input_files"
+    OUTPUT_FILES_DIR: Path = BASE_DIR / ".." / "output_files"
 
     # Логика деления на файлы:
     DIVIDE_CONFIG_BY_ASSET: bool = True
@@ -52,14 +52,14 @@ class Settings(BaseSettings):
 
     @property
     def LIST_OF_SIGNALS_FILE(self):
-        return os.path.join(self.INPUT_FILES_DIR, self.LIST_OF_SIGNALS_NAME)
+        return self.INPUT_FILES_DIR / self.LIST_OF_SIGNALS_NAME
 
     @property
     def EXCEL_DATA_FILE(self):
-        return os.path.join(self.OUTPUT_FILES_DIR, self.EXCEL_DATA_NAME)
+        return self.OUTPUT_FILES_DIR / self.EXCEL_DATA_NAME
 
     @property
     def JSON_CONFIG_FILE(self):
-        return os.path.join(self.OUTPUT_FILES_DIR, self.JSON_CONFIG_NAME)
+        return self.OUTPUT_FILES_DIR / self.JSON_CONFIG_NAME
 
 settings = Settings()
