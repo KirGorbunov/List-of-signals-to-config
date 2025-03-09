@@ -48,9 +48,9 @@ def main():
         logging.debug(f"Конфиг для ассета {asset} сгенерирован")
 
         # Создание файлов:
-        file_creator = FileCreator()
-        file_creator.create_json_with_config(config, asset)
-        file_creator.create_excel_data_template(signals_template, asset)
+        file_creator = FileCreator(asset, signals_template, config)
+        file_creator.create_json_with_config()
+        file_creator.create_excel_data_template()
     logging.info("Все файлы созданы")
 
 
