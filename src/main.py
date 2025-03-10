@@ -1,9 +1,9 @@
 import logging
-from src.data_loader import DataLoader, DataConstructor
-from src.signal_processor import SignalProcessor
-from src.data_mapper import DataMapper, ConfigGenerator
-from src.file_creator import FileCreator
-from src.settings import settings
+from data_loader import DataLoader, DataConstructor
+from signal_processor import SignalProcessor
+from data_mapper import DataMapper, ConfigGenerator
+from file_creator import FileCreator
+from settings import settings
 
 
 logging.basicConfig(

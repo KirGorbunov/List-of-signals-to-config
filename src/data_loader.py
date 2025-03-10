@@ -1,5 +1,5 @@
 import pandas as pd
-from src.settings import settings
+from settings import settings
 
 
 class DataLoader:

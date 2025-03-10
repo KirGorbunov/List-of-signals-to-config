@@ -4,9 +4,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     # Базовая директория
-    BASE_DIR: Path = Path(__file__).resolve().parent
-    INPUT_FILES_DIR: Path = BASE_DIR / ".." / "input_files"
-    OUTPUT_FILES_DIR: Path = BASE_DIR / ".." / "output_files"
+    BASE_DIR: Path = Path(__file__).resolve().parent.parent
+    INPUT_FILES_DIR: Path = BASE_DIR / "input_files"
+    OUTPUT_FILES_DIR: Path = BASE_DIR / "output_files"
 
     # Логика деления на файлы:
     DIVIDE_CONFIG_BY_ASSET: bool = True
@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     # Уровень логгирования:
     LOGGING_LEVEL: str = 'INFO'
 
-    model_config = SettingsConfigDict(env_file="../.env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", env_file_encoding="utf-8")
 
     @property
     def LIST_OF_SIGNALS_FILE(self):

@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from src.settings import settings
+from settings import settings
 import logging
 
 

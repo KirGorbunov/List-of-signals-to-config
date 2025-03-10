@@ -1,7 +1,7 @@
 import json
 import pandas as pd
 from typing import NoReturn
-from src.settings import settings
+from settings import settings
 import logging
 
 
